@@ -1,6 +1,6 @@
 {
   "name": "@eagleoutice/eslint-config-flowr",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Linting rules for flowr and friends",
   "license": "ISC",
   "main": "index.js",
