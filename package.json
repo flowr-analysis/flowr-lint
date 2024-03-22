@@ -4,6 +4,9 @@
   "description": "Linting rules for flowr and friends",
   "license": "ISC",
   "main": "index.js",
+  "scripts": {
+    "publish": "npm publish --access public"
+  },
   "peerDependencies": {
     "@stylistic/eslint-plugin": "^1.6.2",
     "@stylistic/eslint-plugin-plus": "^1.6.2",
