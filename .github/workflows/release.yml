@@ -1,0 +1,35 @@
+name: release
+on:
+  push:
+    branches: [main]
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PUSH_TOKEN }}
+          fetch-depth: 0
+      - name: Configure git user
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 21.6.x
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Bump version
+        id: version
+        run: npm version patch -m "[skip ci] Release %s"
+      - name: Push version update commmit
+        run: |
+          git push
+          git push --tags
+
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
