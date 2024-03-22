@@ -5,7 +5,7 @@
   "license": "ISC",
   "main": "index.js",
   "scripts": {
-    "publish": "npm publish --access public"
+    "publish-npm": "npm publish --access public"
   },
   "peerDependencies": {
     "@stylistic/eslint-plugin": "^1.6.2",

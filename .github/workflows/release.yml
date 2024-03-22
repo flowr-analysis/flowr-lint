@@ -33,6 +33,6 @@ jobs:
           git push --tags
 
       - name: Publish
-        run: npm run publish
+        run: npm run publish-npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
