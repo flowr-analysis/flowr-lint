@@ -91,7 +91,7 @@ module.exports = {
       "check-file/filename-naming-convention": [
         "error",
         {
-          "**/*.ts": "?([A-Z])+([a-z])*((-|.)?([A-Z])+([a-z]))"
+          "**/*.ts": "?(\\d+-)?([A-Z])+([a-z])*((-|.)?([A-Z])+([a-z]))"
         }
       ],
       "check-file/folder-match-with-fex": [
