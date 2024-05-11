@@ -27,7 +27,7 @@ jobs:
       - name: Bump version
         id: version
         run: npm version patch -m "[skip ci] Release %s"
-      - name: Push version update commmit
+      - name: Push version update commit
         run: |
           git push
           git push --tags
