@@ -20,6 +20,7 @@ module.exports = {
     "plugins": [
       "@typescript-eslint",
       "eslint-plugin-tsdoc",
+      "eslint-plugin-unused-imports",
       "check-file",
       "@stylistic",
       "@stylistic/js",
@@ -140,13 +141,16 @@ module.exports = {
         "error",
         "never"
       ],
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          "argsIgnorePattern": "^_",
-          "destructuredArrayIgnorePattern": "^_",
-          "varsIgnorePattern": "^_"
-        }
+      "@typescript-eslint/no-unused-vars": "off",
+      "unused-imports/no-unused-imports": "error",
+      "unused-imports/no-unused-vars": [
+          "error",
+          {
+              "vars": "all",
+              "varsIgnorePattern": "^_",
+              "args": "after-used",
+              "argsIgnorePattern": "^_",
+          },
       ],
       "tsdoc/syntax": "error",
       "@typescript-eslint/naming-convention": [
