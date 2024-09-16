@@ -81,7 +81,10 @@ module.exports = {
       ],
       "@stylistic/js/semi": [
         "error",
-        "never"
+        "always",
+        {
+          "omitLastInOneLineBlock": true
+        }
       ],
       "@stylistic/js/space-before-function-paren": [
         "error",
