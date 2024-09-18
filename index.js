@@ -203,7 +203,6 @@ module.exports = {
         "error",
         "1tbs"
       ],
-      "@stylistic/js/new-parens": "error",
-      "import/no-duplicates": "error"
+      "@stylistic/js/new-parens": "error"
     }
   }
