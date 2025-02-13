@@ -8,17 +8,17 @@
     "publish-npm": "npm publish --access public"
   },
   "peerDependencies": {
-    "@stylistic/eslint-plugin": "^2.1.0",
-    "@stylistic/eslint-plugin-plus": "^2.1.0",
-    "@stylistic/eslint-plugin-ts": "^2.1.0",
-    "@stylistic/eslint-plugin-js": "^2.8.0",
-    "@typescript-eslint/eslint-plugin": "^7.8.0",
-    "eslint": "^8.57.0",
-    "eslint-plugin-check-file": "^2.8.0",
-    "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-n": "^17.6.0",
-    "eslint-plugin-promise": "^6.1.1",
-    "eslint-plugin-tsdoc": "^0.2.17",
+    "@stylistic/eslint-plugin": "^3.1.0",
+    "@stylistic/eslint-plugin-plus": "^3.1.0",
+    "@stylistic/eslint-plugin-ts": "^3.1.0",
+    "@stylistic/eslint-plugin-js": "^3.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.24.0",
+    "eslint": "^9.20.1",
+    "eslint-plugin-check-file": "^3.0.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-n": "^17.15.1",
+    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-tsdoc": "^0.4.0",
     "eslint-plugin-unused-imports": "^4.1.4"
   },
   "devDependencies": {}
