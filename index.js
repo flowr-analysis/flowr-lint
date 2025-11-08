@@ -8,7 +8,8 @@ module.exports = {
       "eslint:recommended",
       "plugin:@typescript-eslint/recommended-requiring-type-checking",
       "plugin:@typescript-eslint/strict",
-      "plugin:@typescript-eslint/recommended"
+      "plugin:@typescript-eslint/recommended",
+      "plugin:jsdoc/recommended"
     ],
     "overrides": [],
     "parserOptions": {
@@ -21,6 +22,7 @@ module.exports = {
       "@typescript-eslint",
       "eslint-plugin-tsdoc",
       "eslint-plugin-unused-imports",
+      "jsdoc",
       "check-file",
       "@stylistic",
       "@stylistic/js",
@@ -54,6 +56,9 @@ module.exports = {
           "avoidEscape": true
         }
       ],
+       'jsdoc/check-alignment': 'error',
+      'jsdoc/check-indentation': 'error',
+      'jsdoc/tag-spacing': ['error', { before: false, after: true }],
       "@stylistic/no-mixed-spaces-and-tabs": [
         "error",
         "smart-tabs"
