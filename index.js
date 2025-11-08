@@ -145,6 +145,7 @@ module.exports = {
         "error",
         "never"
       ],
+      "@stylistic/no-trailing-spaces": "error",
       "@typescript-eslint/no-unused-vars": "off",
       "unused-imports/no-unused-imports": "error",
       "unused-imports/no-unused-vars": [
