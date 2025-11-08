@@ -56,8 +56,8 @@ module.exports = {
           "avoidEscape": true
         }
       ],
-      'jsdoc/check-alignment': 'error',
-      'jsdoc/check-indentation': 'error',
+      "jsdoc/check-alignment": "error",
+      "jsdoc/check-indentation": "off",
       "jsdoc/no-types": "error",
       "jsdoc/no-undefined-types": "off",
       "jsdoc/check-tag-names": "off",
