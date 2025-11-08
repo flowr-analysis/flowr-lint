@@ -56,8 +56,22 @@ module.exports = {
           "avoidEscape": true
         }
       ],
-       'jsdoc/check-alignment': 'error',
+      'jsdoc/check-alignment': 'error',
       'jsdoc/check-indentation': 'error',
+      "jsdoc/no-types": "error",
+      "jsdoc/require-jsdoc": [
+        "error",
+        {
+          "publicOnly": true,
+          "checkGetters": false,
+          "checkSetters": false,
+          "require": {
+            "FunctionDeclaration": true
+          }
+        }
+      ],
+      "jsdoc/require-param-type": "off",
+      "jsdoc/require-returns-type": "off",
       "@stylistic/no-mixed-spaces-and-tabs": [
         "error",
         "smart-tabs"
