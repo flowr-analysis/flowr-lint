@@ -59,6 +59,8 @@ module.exports = {
       'jsdoc/check-alignment': 'error',
       'jsdoc/check-indentation': 'error',
       "jsdoc/no-types": "error",
+      "jsdoc/no-undefined-types": "off",
+      "jsdoc/check-tag-names": "off",
       "jsdoc/require-param": "off",
       "jsdoc/require-description": "off",
       "jsdoc/require-param-description": "off",
@@ -66,6 +68,11 @@ module.exports = {
       "jsdoc/require-property": "off",
       "jsdoc/require-throws": "off",
       "jsdoc/require-file-overview": "off",
+      "jsdoc/check-param-names": ["error", {
+        "checkDestructured": false,
+        "checkRestProperty": false,
+        "enableFixer": true
+      }],
       "jsdoc/require-jsdoc": [
         "error",
         {
