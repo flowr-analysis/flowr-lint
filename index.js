@@ -69,11 +69,7 @@ module.exports = {
       "jsdoc/require-throws": "off",
       "jsdoc/require-throws-type": "off",
       "jsdoc/require-file-overview": "off",
-      "jsdoc/check-param-names": ["error", {
-        "checkDestructured": false,
-        "checkRestProperty": false,
-        "enableFixer": true
-      }],
+      "jsdoc/check-param-names": "off",
       "jsdoc/require-jsdoc": [
         "error",
         {
