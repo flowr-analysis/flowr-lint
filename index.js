@@ -43,6 +43,10 @@ module.exports = {
           "SwitchCase": 1
         }
       ],
+      '@stylistic/padding-line-between-statements': [
+        'error',
+        { blankLine: 'never', prev: 'import', next: 'import' },
+      ],
       "@stylistic/js/quotes": [
         "error",
         "single",
