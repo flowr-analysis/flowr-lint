@@ -225,6 +225,12 @@ module.exports = {
         "1tbs"
       ],
       "@stylistic/js/new-parens": "error",
-      "import/no-duplicates": "error"
+      "import/no-duplicates": [
+        "error",
+        { 
+          "considerQueryString": true,
+          "prefer-inline": true
+        }
+      ]
     }
   }
