@@ -58,6 +58,7 @@ module.exports = {
         "error",
         "smart-tabs"
       ],
+      "@stylistic/no-mixed-operators": "error",
       "no-warning-comments": [
         "error",
         {
