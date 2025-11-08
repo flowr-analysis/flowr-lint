@@ -58,7 +58,6 @@ module.exports = {
       ],
        'jsdoc/check-alignment': 'error',
       'jsdoc/check-indentation': 'error',
-      'jsdoc/tag-spacing': ['error', { before: false, after: true }],
       "@stylistic/no-mixed-spaces-and-tabs": [
         "error",
         "smart-tabs"
