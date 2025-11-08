@@ -59,6 +59,13 @@ module.exports = {
       'jsdoc/check-alignment': 'error',
       'jsdoc/check-indentation': 'error',
       "jsdoc/no-types": "error",
+      "jsdoc/require-param": "off",
+      "jsdoc/require-description": "off",
+      "jsdoc/require-param-description": "off",
+      "jsdoc/require-returns": "off",
+      "jsdoc/require-property": "off",
+      "jsdoc/require-throws": "off",
+      "jsdoc/require-file-overview": "off",
       "jsdoc/require-jsdoc": [
         "error",
         {
@@ -76,7 +83,6 @@ module.exports = {
         "error",
         "smart-tabs"
       ],
-      "@stylistic/no-mixed-operators": "error",
       "no-warning-comments": [
         "error",
         {
