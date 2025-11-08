@@ -85,6 +85,12 @@ module.exports = {
           "align": "value"
         }
       ],
+      "@stylistic/no-tabs": [
+        "error",
+        {
+          "allowIndentationTabs": true
+        } 
+      ],
       "@stylistic/js/semi": [
         "error",
         "always",
