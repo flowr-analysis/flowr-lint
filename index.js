@@ -67,6 +67,7 @@ module.exports = {
       "jsdoc/require-returns": "off",
       "jsdoc/require-property": "off",
       "jsdoc/require-throws": "off",
+      "jsdoc/require-throws-type": "off",
       "jsdoc/require-file-overview": "off",
       "jsdoc/check-param-names": ["error", {
         "checkDestructured": false,
@@ -86,6 +87,7 @@ module.exports = {
       ],
       "jsdoc/require-param-type": "off",
       "jsdoc/require-returns-type": "off",
+      "jsdoc/require-yields": "off",
       "@stylistic/no-mixed-spaces-and-tabs": [
         "error",
         "smart-tabs"
@@ -255,7 +257,7 @@ module.exports = {
         "error",
         { 
           "considerQueryString": true,
-          "prefer-inline": true
+          "prefer-inline": false
         }
       ]
     }
