@@ -273,6 +273,13 @@ module.exports = {
           "considerQueryString": true,
           "prefer-inline": false
         }
+      ],
+      "@typescript-eslint/no-invalid-void-type": [
+        "error",
+        {
+          "allowInGenericTypeArguments": true,
+          "allowAsThisParameter": true
+        }
       ]
     }
   }
