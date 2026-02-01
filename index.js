@@ -30,11 +30,19 @@ module.exports = {
       "import"
     ],
     "rules": {
-      "@stylistic/js/object-curly-spacing": [
+      "@stylistic/object-curly-spacing": [
         "error",
-        "always"
+        "always",
+         { emptyObjects: "never" }
       ],
-      "@stylistic/js/indent": [
+      "@stylistic/comma-spacing": [
+        "error",
+        {
+          "before": false,
+          "after": true
+        }
+      ],
+      "@stylistic/indent": [
         "error",
         "tab",
         {
@@ -49,7 +57,7 @@ module.exports = {
         'error',
         { blankLine: 'never', prev: 'import', next: 'import' },
       ],
-      "@stylistic/js/quotes": [
+      "@stylistic/quotes": [
         "error",
         "single",
         {
@@ -238,7 +246,11 @@ module.exports = {
           ]
         }
       ],
-      "@typescript-eslint/consistent-type-imports": "error",
+      "@typescript-eslint/consistent-type-imports": ["error", {
+        "prefer": "type-imports",
+        "disallowTypeAnnotations": false,
+        "fixStyle": "separate-type-imports"
+      }],
       "curly": "error",
       "@stylistic/type-annotation-spacing": [
         "error",
