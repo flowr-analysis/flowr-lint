@@ -120,7 +120,7 @@ module.exports = {
           "assertionStyle": "as"
         }
       ],
-      "@stylistic/ts/key-spacing": [
+      "@stylistic/key-spacing": [
         "error",
         {
           "align": "value"
@@ -132,18 +132,18 @@ module.exports = {
           "allowIndentationTabs": true
         } 
       ],
-      "@stylistic/js/semi": [
+      "@stylistic/semi": [
         "error",
         "always",
         {
           "omitLastInOneLineBlock": true
         }
       ],
-      "@stylistic/js/space-before-function-paren": [
+      "@stylistic/space-before-function-paren": [
         "error",
         "never"
       ],
-      "@stylistic/js/keyword-spacing": "off",
+      "@stylistic/keyword-spacing": "off",
       "check-file/filename-naming-convention": [
         "error",
         {
@@ -156,7 +156,7 @@ module.exports = {
           "*.spec.{js,jsx,ts,tsx}": "test/**"
         }
       ],
-      "@stylistic/ts/keyword-spacing": [
+      "@stylistic/keyword-spacing": [
         "error",
         {
           "before": true,
@@ -189,7 +189,7 @@ module.exports = {
           }
         }
       ],
-      "@stylistic/ts/space-before-function-paren": [
+      "@stylistic/space-before-function-paren": [
         "error",
         "never"
       ],
@@ -258,13 +258,17 @@ module.exports = {
       "curly": "error",
       "@stylistic/type-annotation-spacing": [
         "error",
-        { "before": false, "after": true, "overrides": { "arrow": { "before": true, "after": true }} }
+        { "before": false, "after": true }
       ],
-      "@stylistic/js/brace-style": [
+      "@stylistic/arrow-spacing": [  
+        "error",
+         { "before": true, "after": true }
+      ],
+      "@stylistic/brace-style": [
         "error",
         "1tbs"
       ],
-      "@stylistic/js/new-parens": "error",
+      "@stylistic/new-parens": "error",
       "import/no-duplicates": [
         "error",
         { 
