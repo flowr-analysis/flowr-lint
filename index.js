@@ -256,7 +256,7 @@ module.exports = {
       "curly": "error",
       "@stylistic/type-annotation-spacing": [
         "error",
-        { "before": false, "after": true }
+        { "before": false, "after": true, "overrides": { "arrow": "ignore" } }
       ],
       "@stylistic/arrow-spacing": [  
         "error",
