@@ -8,18 +8,18 @@
     "publish-npm": "npm publish --access public"
   },
   "peerDependencies": {
-    "@stylistic/eslint-plugin": "^3.1.0",
-    "@stylistic/eslint-plugin-js": "^3.1.0",
-    "@stylistic/eslint-plugin-plus": "^3.1.0",
-    "@stylistic/eslint-plugin-ts": "^3.1.0",
-    "@typescript-eslint/eslint-plugin": "^8.24.0",
-    "eslint": "^9.20.1",
-    "eslint-plugin-check-file": "^3.0.0",
-    "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-n": "^17.15.1",
+    "@stylistic/eslint-plugin": "^5.7.1",
+    "@stylistic/eslint-plugin-js": "^4.4.1",
+    "@stylistic/eslint-plugin-plus": "^4.4.1",
+    "@stylistic/eslint-plugin-ts": "^4.4.1",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-check-file": "^3.3.1",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-n": "^17.23.2",
     "eslint-plugin-promise": "^7.2.1",
-    "eslint-plugin-tsdoc": "^0.4.0",
-    "eslint-plugin-unused-imports": "^4.1.4",
-    "eslint-plugin-jsdoc": "^61.1.12"
+    "eslint-plugin-tsdoc": "^0.5.0",
+    "eslint-plugin-unused-imports": "^4.3.0",
+    "eslint-plugin-jsdoc": "^62.5.0"
   }
 }
