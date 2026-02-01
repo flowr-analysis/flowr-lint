@@ -57,6 +57,10 @@ module.exports = {
         'error',
         { blankLine: 'never', prev: 'import', next: 'import' },
       ],
+      '@stylistic/comma-dangle': [
+        'error',
+        "only-multiline"
+      ],
       "@stylistic/quotes": [
         "error",
         "single",
