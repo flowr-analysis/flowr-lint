@@ -25,8 +25,6 @@ module.exports = {
       "jsdoc",
       "check-file",
       "@stylistic",
-      "@stylistic/js",
-      "@stylistic/ts",
       "import"
     ],
     "rules": {
