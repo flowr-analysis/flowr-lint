@@ -192,6 +192,12 @@ module.exports = {
         "never"
       ],
       "@stylistic/no-trailing-spaces": "error",
+      "@stylistic/space-infix-ops": [
+        "error",
+        {
+          "int32Hint": false
+        }
+      ],
       "@typescript-eslint/no-unused-vars": "off",
       "unused-imports/no-unused-imports": "error",
       "unused-imports/no-unused-vars": [
