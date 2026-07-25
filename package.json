@@ -1,23 +1,28 @@
 {
   "name": "@eagleoutice/eslint-config-flowr",
-  "version": "1.0.43",
+  "version": "2.0.0",
   "description": "Linting rules for flowr and friends",
   "license": "ISC",
   "main": "index.js",
+  "files": [
+    "index.js"
+  ],
   "scripts": {
     "publish-npm": "npm publish --access public"
   },
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "globals": "^17.7.0"
+  },
   "peerDependencies": {
     "@stylistic/eslint-plugin": "^5.7.1",
-    "@stylistic/eslint-plugin-plus": "^4.4.1",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
-    "eslint": "^9.39.2",
+    "@typescript-eslint/parser": "^8.54.0",
+    "eslint": "^10.0.0",
     "eslint-plugin-check-file": "^3.3.1",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-n": "^17.23.2",
-    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-jsdoc": "^62.5.0",
     "eslint-plugin-tsdoc": "^0.5.0",
-    "eslint-plugin-unused-imports": "^4.3.0",
-    "eslint-plugin-jsdoc": "^62.5.0"
+    "eslint-plugin-unused-imports": "^4.3.0"
   }
 }
