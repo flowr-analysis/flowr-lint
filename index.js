@@ -91,6 +91,9 @@ module.exports = [
 			'@typescript-eslint/no-unsafe-enum-comparison':         'off',
 			'@typescript-eslint/no-redundant-type-constituents':    'off',
 			'@typescript-eslint/consistent-type-assertions':        ['error', { assertionStyle: 'as' }],
+			'@typescript-eslint/no-unnecessary-type-assertion':     ['error', { typesToIgnore: ['never'] }],
+			/* bit-flag enums may spell their members as shifts, so the bit is the number you read */
+			'@typescript-eslint/prefer-literal-enum-member':        ['error', { allowBitwiseExpressions: true }],
 
 			'@stylistic/key-spacing':                 ['error', { align: 'value' }],
 			'@stylistic/no-tabs':                     ['error', { allowIndentationTabs: true }],
