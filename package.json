@@ -13,14 +13,15 @@
     "patterns.d.ts",
     "pattern-type.js",
     "pattern-type.d.ts",
-    "rules",
+    "rules/*.js",
+    "rules/*.d.ts",
     "tsdoc.json"
   ],
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test \"test/*.test.ts\"",
-    "prepublishOnly": "npm run build",
+    "prepack": "npm run build",
     "publish-npm": "npm publish --access public"
   },
   "dependencies": {

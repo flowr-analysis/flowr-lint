@@ -33,12 +33,15 @@ jobs:
       - name: Bump version
         id: version
         run: npm version patch -m "[skip ci] Release %s"
-      - name: Push version update commit
-        run: |
-          git push
-          git push --tags
 
+      # publish before pushing: a failed publish must not leave a released
+      # version commit and tag on main that never made it to the registry
       - name: Publish
         run: npm run publish-npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Push version update commit
+        run: |
+          git push
+          git push --tags
