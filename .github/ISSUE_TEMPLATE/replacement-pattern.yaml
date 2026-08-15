@@ -1,0 +1,64 @@
+name: Replacement Pattern
+description: Suggest a new pattern for flowr/replacement-pattern, or a change to an existing one
+title: '[pattern] '
+labels: ['replacement-pattern']
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - New pattern
+        - Change an existing pattern
+        - Remove a pattern
+    validations:
+      required: true
+  - type: input
+    id: id
+    attributes:
+      label: Pattern id
+      description: The id in patterns.js, or the id you propose for a new one (kebab-case, e.g. edge-is-only-type).
+    validations:
+      required: true
+  - type: textarea
+    id: before
+    attributes:
+      label: Code that should be reported
+      render: ts
+      placeholder: const isRead = edge.types === EdgeType.Reads;
+    validations:
+      required: true
+  - type: textarea
+    id: after
+    attributes:
+      label: Replacement
+      render: ts
+      placeholder: const isRead = DfEdge.isOnlyType(edge, EdgeType.Reads);
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why the replacement is better
+      description: What the hand-written form gets wrong or hides. If the two are not equivalent in every case, say when.
+    validations:
+      required: true
+  - type: input
+    id: declared-in
+    attributes:
+      label: Declaring file
+      description: The flowR file the matched property, type, or enum comes from. The pattern uses it to keep out unrelated code of the same shape.
+      placeholder: dataflow/graph/edge
+  - type: textarea
+    id: not-reported
+    attributes:
+      label: Code that must stay unreported
+      description: Similar shapes that are fine, especially ones from other modules.
+      render: ts
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: The replacement exists (or the issue says which helper has to be added first)
+        - label: The pattern is not already covered by another id in patterns.js

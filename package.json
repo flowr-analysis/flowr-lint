@@ -1,28 +1,47 @@
 {
   "name": "@eagleoutice/eslint-config-flowr",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "Linting rules for flowr and friends",
   "license": "ISC",
   "main": "index.js",
   "files": [
-    "index.js"
+    "index.js",
+    "index.d.ts",
+    "plugin.js",
+    "plugin.d.ts",
+    "patterns.js",
+    "patterns.d.ts",
+    "pattern-type.js",
+    "pattern-type.d.ts",
+    "rules",
+    "tsdoc.json"
   ],
   "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test \"test/*.test.ts\"",
+    "prepublishOnly": "npm run build",
     "publish-npm": "npm publish --access public"
   },
   "dependencies": {
     "@eslint/js": "^10.0.1",
-    "globals": "^17.7.0"
-  },
-  "peerDependencies": {
     "@stylistic/eslint-plugin": "^5.7.1",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
-    "eslint": "^10.0.0",
     "eslint-plugin-check-file": "^3.3.1",
     "eslint-plugin-import-x": "^4.17.1",
     "eslint-plugin-jsdoc": "^62.5.0",
     "eslint-plugin-tsdoc": "^0.5.0",
-    "eslint-plugin-unused-imports": "^4.3.0"
+    "eslint-plugin-unicorn": "^73.0.0",
+    "eslint-plugin-unused-imports": "^4.3.0",
+    "globals": "^17.7.0"
+  },
+  "peerDependencies": {
+    "eslint": "^10.0.0"
+  },
+  "types": "index.d.ts",
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3"
   }
 }

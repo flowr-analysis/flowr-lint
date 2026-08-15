@@ -1,0 +1,4 @@
+{
+  "//": "the tests use ESM syntax, the package itself stays CommonJS",
+  "type": "module"
+}

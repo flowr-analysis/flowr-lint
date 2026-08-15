@@ -20,10 +20,15 @@ jobs:
       - name: Install node
         uses: actions/setup-node@v4
         with:
-          node-version: 21.6.x
+          node-version: 24.x
           registry-url: 'https://registry.npmjs.org/'
       - name: Install deps
         run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
 
       - name: Bump version
         id: version

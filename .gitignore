@@ -1,2 +1,14 @@
 .idea
 node_modules
+
+# build output of the TypeScript sources
+/index.js
+/index.d.ts
+/plugin.js
+/plugin.d.ts
+/patterns.js
+/patterns.d.ts
+/pattern-type.js
+/pattern-type.d.ts
+/rules/*.js
+/rules/*.d.ts
