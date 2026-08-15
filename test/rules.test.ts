@@ -1,12 +1,22 @@
 import path from 'path';
 import assert from 'assert';
 import { describe, it, test } from 'node:test';
+import type { Rule } from 'eslint';
 import { Linter, RuleTester } from 'eslint';
 import tsParser from '@typescript-eslint/parser';
 import type { ReplacementPattern } from '../pattern-type.js';
 import defaults from '../patterns.js';
 import useInstead from '../rules/use-instead.js';
 import replacementPattern from '../rules/replacement-pattern.js';
+import { declarationFile, symbolOf, typeServices } from '../rules/util.js';
+
+/*
+ * typescript-eslint picks its TypeScript program strategy from the environment, and `CI=true` (set by
+ * GitHub Actions) picks a different one than a developer machine does. Pinning it here means a local run
+ * takes the same path as the pipeline, so a setup that only breaks on CI breaks on the desk as well.
+ * The parser reads this per parse, not on import, so the assignment lands early enough.
+ */
+process.env.CI = 'true';
 
 /* `npm test` runs from the package root, so the fixtures are addressed from there */
 /* report every case through `node --test` instead of collapsing the file into one test */
@@ -17,13 +27,54 @@ RuleTester.it = (title: string, fn: () => void) => it(oneLine(title), fn);
 const tsconfigRootDir = path.resolve('test/fixtures');
 const filename = path.join(tsconfigRootDir, 'file.ts');
 
+/*
+ * The type-aware cases hand the parser a snippet under the name of a fixture that also exists on disk.
+ * Only the watch program feeds that snippet into the TypeScript program; the single-run program reads
+ * the file from disk instead, so every type-aware rule would quietly see `file.ts` and report nothing.
+ * typescript-eslint infers a single run whenever `CI=true` is set, which is exactly what GitHub Actions
+ * does, so the inference is switched off here rather than left to the environment.
+ */
+const parserOptions = { project: './tsconfig.json', tsconfigRootDir, disallowAutomaticSingleRunInference: true };
+
 const typed = new RuleTester({
 	languageOptions: {
-		parser:        tsParser,
-		parserOptions: { project: './tsconfig.json', tsconfigRootDir }
+		parser: tsParser,
+		parserOptions
 	}
 });
 const plain = new RuleTester();
+
+/*
+ * Guards the parser options above. Without them the type-aware suites report nothing, every `valid` case
+ * still passes, and only the `invalid` ones give it away — so the setup is checked head-on instead.
+ */
+test('the type-aware setup reaches the code under test', () => {
+	const seen: { text?: string, declaredIn?: string } = {};
+	const probe: Rule.RuleModule = {
+		create(context) {
+			const services = typeServices(context);
+			const checker = services?.program.getTypeChecker();
+			return {
+				MemberExpression(node): void {
+					seen.text = context.sourceCode.getText();
+					seen.declaredIn = services && checker ? declarationFile(symbolOf(node.property, services, checker)) : undefined;
+				}
+			};
+		}
+	};
+	const code = 'import type { Edge } from "./graph-edge";\ndeclare const e: Edge;\nconst a = e.types === 1;';
+	const fatal = new Linter().verify(code, {
+		files:           ['**/*.ts'],
+		plugins:         { flowr: { rules: { probe } } },
+		languageOptions: { parser: tsParser, parserOptions },
+		rules:           { 'flowr/probe': 'error' }
+	}, filename).filter(m => m.fatal);
+
+	assert.deepStrictEqual(fatal, [], 'the fixture must parse');
+	/* a single-run program hands out the fixture on disk instead, and `e.types` is not in it */
+	assert.strictEqual(seen.text, code, 'the parser must see the code under test, not the fixture on disk');
+	assert.match(seen.declaredIn ?? '', /graph-edge\.ts$/, 'the type checker must resolve the declaring module');
+});
 
 const edgeIsOnlyType: ReplacementPattern = {
 	id:       'edge-is-only-type',
@@ -221,7 +272,7 @@ test('every default pattern reports its replacement', () => {
 	const reported = new Linter().verify(code, {
 		files:           ['**/*.ts'],
 		plugins:         { flowr: { rules: { 'replacement-pattern': replacementPattern } } },
-		languageOptions: { parser: tsParser, parserOptions: { project: './tsconfig.json', tsconfigRootDir } },
+		languageOptions: { parser: tsParser, parserOptions },
 		rules:           { 'flowr/replacement-pattern': ['error', { patterns: defaults }] }
 	}, filename);
 
