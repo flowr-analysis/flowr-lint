@@ -1,13 +1,13 @@
 /**
  * Shared helpers of the flowR rules.
- * Tags: `@useInstead <target>` names a replacement, `@performanceCritical` and `@lintIgnore [ids]` silence the rules.
+ * Tags: `@useInstead <target>` names a replacement, `@lintIgnore [ids]` silences the rules.
  */
 import type { Rule, Scope, SourceCode } from 'eslint';
 import type { Comment, Node } from 'estree';
 import type { TsSymbol, TsTypeChecker, TypeServices } from './ts-types';
 
 const USE_INSTEAD_TAG = 'useInstead';
-const SUPPRESS_TAGS = ['@performanceCritical', '@lintIgnore'];
+const SUPPRESS_TAG = '@lintIgnore';
 /* ts.SymbolFlags.Alias, spelled out to keep typescript out of the dependencies */
 const ALIAS_FLAG = 1 << 21;
 
@@ -25,8 +25,6 @@ function isDocComment(comment: Comment): boolean {
 function silences(comment: Comment, ids: readonly string[]): boolean {
 	if(!isDocComment(comment)) {
 		return false;
-	} else if(comment.value.includes('@performanceCritical')) {
-		return true;
 	}
 	const ignore = /@lintIgnore([^\n@*]*)/.exec(comment.value);
 	if(!ignore) {
@@ -37,12 +35,12 @@ function silences(comment: Comment, ids: readonly string[]): boolean {
 }
 
 /**
- * Whether `node` sits below a declaration documented with a suppressing tag, or in a file whose
- * header comment carries one. Guarded by one string search, so untagged files pay nothing.
+ * Whether `node` sits below a declaration documented with `@lintIgnore`, or in a file whose header comment
+ * carries it. Guarded by one string search, so untagged files pay nothing.
  */
 export function suppressed(context: Rule.RuleContext, node: Rule.Node, ids: readonly string[]): boolean {
 	const sourceCode = context.sourceCode;
-	if(!SUPPRESS_TAGS.some(tag => sourceCode.text.includes(tag))) {
+	if(!sourceCode.text.includes(SUPPRESS_TAG)) {
 		return false;
 	}
 	/* a header comment marks the whole file: above the imports, or separated by a blank line */

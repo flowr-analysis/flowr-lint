@@ -75,6 +75,22 @@ To add one, append to [`patterns.ts`](patterns.ts):
 | `fix` | `true` always fixes, `false` always suggests, which is right when the replacement can change type narrowing. Omitted, it fixes when the replacement is in scope |
 | `id` | names the pattern in `@lintIgnore` and in the message |
 
+The shipped set groups into families:
+
+| family | shape it finds | helper it points at |
+| :-- | :-- | :-- |
+| `edge-*` | `e.types === T`, `(e.types & T) !== 0`, and the bitmask spellings around them | `DfEdge` |
+| `vertex-is*`, `vertex-has-origin` | `v.tag === VertexType.X`, `FunctionCallVertex.is(v) && v.origin.includes(o)` | the `*Vertex` objects |
+| `node-is*` | `n.type === RType.X`, negated and through `?.` | `RSymbol`, `RFunctionCall`, and the rest of the `R*` node objects |
+| `argument-is-*`, `call-is-*`, `list-is-implicit` | a guard written out, `RFunctionCall.is(n) && n.named` | the narrower guard of the same object |
+| `symbol-name-comparison*` | `symbol.content === 'name'`, which misses `pkg::name` because an identifier with a namespace is an array | `Identifier.getName` / `Identifier.matches` |
+| `graph-edges-no-alloc`, `some-instead-of-filter-length`, `array-sum` | an allocation or a full walk where a shared constant or a helper does it once | `NoEdges`, `some`, `arraySum` |
+
+A pattern is exempt in the file `declaredIn` resolves to, which is why a shape only earns a place here when the
+match names a flowR symbol: without one the rule cannot tell the helper's own body apart from a call site, and
+`@lintIgnore` on the declaration would be papering over that. A guard that *is* the raw comparison
+(`RSymbol.is` compares `type` against `RType.Symbol`) is the case the tag is actually for.
+
 An own `patterns` array replaces the defaults rather than merging with them. To propose one, open an issue with the
 [replacement pattern template](.github/ISSUE_TEMPLATE/replacement-pattern.yaml).
 
@@ -83,8 +99,7 @@ An own `patterns` array replaces the defaults rather than merging with them. To 
 | | silences |
 | :-- | :-- |
 | `// eslint-disable-next-line` | the next line, as usual |
-| `@performanceCritical` | a hot path that has to keep the raw form |
-| `@lintIgnore <ids>` | the named rules or pattern ids, all of them when given none |
+| `@lintIgnore <ids>` | the named rules or pattern ids, all of them when given none (put the reason in the prose above it) |
 
 A tag on a declaration covers everything below it, a header comment above the imports covers the file. The lookup is
 guarded by a single string search, so files without either tag pay nothing.

@@ -97,8 +97,8 @@ plain.run('replacement-pattern', replacementPattern, {
 		{ name: 'another property does not match', code: 'const a = edge.other === EdgeType.Reads;', options: options([edgeIsOnlyType]) },
 		{ name: 'no patterns, no reports', code: 'const a = edge.types === EdgeType.Reads;', options: options([]) },
 		{
-			name:    '`@performanceCritical` silences it',
-			code:    '/**\n * @performanceCritical\n */\nfunction f() { return edge.types === EdgeType.Reads; }',
+			name:    '`@lintIgnore` without ids silences it',
+			code:    '/**\n * @lintIgnore\n */\nfunction f() { return edge.types === EdgeType.Reads; }',
 			options: options([edgeIsOnlyType])
 		},
 		{
@@ -154,7 +154,7 @@ plain.run('replacement-pattern', replacementPattern, {
 		},
 		{
 			name:    'a tag covers its declaration, not the file',
-			code:    '/**\n * @performanceCritical\n */\nfunction f() { return edge.types === EdgeType.Reads; }\nfunction g() { return edge.types === EdgeType.Calls; }',
+			code:    '/**\n * @lintIgnore\n */\nfunction f() { return edge.types === EdgeType.Reads; }\nfunction g() { return edge.types === EdgeType.Calls; }',
 			options: options([edgeIsOnlyType]),
 			errors:  1
 		}
@@ -192,8 +192,8 @@ typed.run('use-instead', useInstead, {
 			filename
 		},
 		{
-			name:     '`@performanceCritical` on the using function',
-			code:     'import { legacy } from "./graph-edge";\n/** @performanceCritical */\nexport function f() { return legacy(1); }',
+			name:     '`@lintIgnore` on the using function',
+			code:     'import { legacy } from "./graph-edge";\n/** @lintIgnore use-instead */\nexport function f() { return legacy(1); }',
 			filename
 		}
 	],
@@ -250,21 +250,47 @@ const shapes = [
 	['o?.tag === VertexType.FunctionCall', 'FunctionCallVertex.is(o)'],
 	['o?.tag !== VertexType.FunctionCall', '!FunctionCallVertex.is(o)'],
 	['FunctionCallVertex.is(v) && v.origin.includes("x")', 'FunctionCallVertex.hasOrigin(v, "x")'],
-	['g.outgoingEdges(1) ?? []',           'g.outgoingEdges(1) ?? NoEdges']
+	['g.outgoingEdges(1) ?? []',           'g.outgoingEdges(1) ?? NoEdges'],
+	['n.type === RType.Symbol',            'RSymbol.is(n)'],
+	['n.type !== RType.Symbol',            '!RSymbol.is(n)'],
+	['m?.type === RType.FunctionCall',     'RFunctionCall.is(m)'],
+	['m?.type !== RType.FunctionCall',     '!RFunctionCall.is(m)'],
+	['RFunctionCall.is(n) && n.named',     'RFunctionCall.isNamed(n)'],
+	['RFunctionCall.is(n) && n.named === true', 'RFunctionCall.isNamed(n)'],
+	['RFunctionCall.is(n) && !n.named',    'RFunctionCall.isUnnamed(n)'],
+	['RArgument.is(n) && n.name !== undefined',  'RArgument.isNamed(n)'],
+	['RArgument.is(n) && n.value !== undefined', 'RArgument.isWithValue(n)'],
+	['RExpressionList.is(n) && n.grouping === undefined', 'RExpressionList.isImplicit(n)'],
+	['s.content === "lib"',                'Identifier.getName(s.content) === "lib"'],
+	['s.content !== "lib"',                'Identifier.getName(s.content) !== "lib"'],
+	['l.reduce((x, y) => x + y, 0)',       'arraySum(l)'],
+	['l.filter(p).length > 0',             'l.some(p)'],
+	['l.filter(p).length === 0',           '!l.some(p)']
 ];
 
-/* `sameText` keeps the two halves apart, esquery alone cannot see that they name different vertices */
-const notReported = 'FunctionCallVertex.is(v) && w.origin.includes("x")';
+/* `sameText` keeps the two halves apart, esquery alone cannot see that the halves name different nodes */
+const notReported = [
+	'FunctionCallVertex.is(v) && w.origin.includes("x")',
+	'RFunctionCall.is(n) && k.named',
+	'RArgument.is(n) && k.name !== undefined'
+];
 
 const code = [
 	'import { EdgeType, type DfEdge } from "./dataflow/graph/edge";',
 	'import { VertexType, FunctionCallVertex, type Vertex } from "./dataflow/graph/vertex";',
 	'import { NoEdges, type Graph } from "./dataflow/graph/graph";',
+	'import { RType } from "./r-bridge/lang-4.x/ast/model/type";',
+	'import { RSymbol } from "./r-bridge/lang-4.x/ast/model/nodes/r-symbol";',
+	'import { RFunctionCall } from "./r-bridge/lang-4.x/ast/model/nodes/r-function-call";',
+	'import { RArgument } from "./r-bridge/lang-4.x/ast/model/nodes/r-argument";',
+	'import { RExpressionList } from "./r-bridge/lang-4.x/ast/model/nodes/r-expression-list";',
 	'declare const e: DfEdge, v: Vertex, w: Vertex, o: Vertex | undefined, g: Graph;',
+	'declare const n: { type: RType }, k: { type: RType }, m: { type: RType } | undefined;',
+	'declare const s: RSymbol, l: number[], p: (x: number) => boolean;',
 	'const { types } = e;',
 	'export const checks = [',
 	...shapes.map(([shape]) => `\t${shape},`),
-	`\t${notReported}`,
+	...notReported.map(shape => `\t${shape},`),
 	'];'
 ].join('\n');
 

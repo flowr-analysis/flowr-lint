@@ -6,10 +6,6 @@
          "syntaxKind": "block"
       },
       {
-         "tagName": "@performanceCritical",
-         "syntaxKind": "modifier"
-      },
-      {
          "tagName": "@lintIgnore",
          "syntaxKind": "block"
       }
