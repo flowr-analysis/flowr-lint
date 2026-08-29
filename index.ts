@@ -108,9 +108,13 @@ const config = [
 			'jsdoc/check-alignment':           'error',
 			/*
 			 * the same alignment `key-spacing` asks of object values, asked of tsdoc: the `-` of every `@param`
-			 * in a block lines up, so the names read as a column instead of as prose
+			 * in a block lines up, so the names read as a column instead of as prose.
+			 *
+			 * `disableWrapIndent` keeps its hands off every line after the first: a continuation is indented
+			 * because the author meant something by it -- a hanging list, or a nested call in an R example
+			 * whose indentation is what links it to the call around it -- and re-flowing that loses the point.
 			 */
-			'jsdoc/check-line-alignment':      ['error', 'always'],
+			'jsdoc/check-line-alignment':      ['error', 'always', { disableWrapIndent: true }],
 			/* `@param name - what it is`, the spelling the codebase already uses everywhere */
 			'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
 			'jsdoc/no-multi-asterisks':        'error',
