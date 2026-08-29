@@ -80,11 +80,13 @@ The shipped set groups into families:
 | family | shape it finds | helper it points at |
 | :-- | :-- | :-- |
 | `edge-*` | `e.types === T`, `(e.types & T) !== 0`, and the bitmask spellings around them | `DfEdge` |
-| `vertex-is*`, `vertex-has-origin` | `v.tag === VertexType.X`, `FunctionCallVertex.is(v) && v.origin.includes(o)` | the `*Vertex` objects |
+| `vertex-is*`, `vertex-has-origin` | `v.tag === VertexType.X`, `Vertex.isFunctionCall(v) && v.origin.includes(o)` | `Vertex` |
 | `node-is*` | `n.type === RType.X`, negated and through `?.` | `RSymbol`, `RFunctionCall`, and the rest of the `R*` node objects |
 | `argument-is-*`, `call-is-*`, `list-is-implicit` | a guard written out, `RFunctionCall.is(n) && n.named` | the narrower guard of the same object |
 | `symbol-name-comparison*` | `symbol.content === 'name'`, which misses `pkg::name` because an identifier with a namespace is an array | `Identifier.getName` / `Identifier.matches` |
-| `graph-edges-no-alloc`, `some-instead-of-filter-length`, `array-sum` | an allocation or a full walk where a shared constant or a helper does it once | `NoEdges`, `some`, `arraySum` |
+| `graph-edges-from`, `graph-edges-to` | `g.outgoingEdges(id) ?? []` / `?? NoEdges`, a fallback the total accessors already are | `edgesFrom` / `edgesTo` |
+| `location-range-hop`, `location-at-node`, `accessor-undefined-guard`, `identifier-tostring-fallback` | an unwrap, a positional destructure, or an absent-value guard in front of a reader that passes `undefined` through by itself | `SourceLocation`, `Identifier` |
+| `some-instead-of-filter-length`, `array-sum` | a full walk where a helper does it once | `some`, `arraySum` |
 
 A pattern is exempt in the file `declaredIn` resolves to, which is why a shape only earns a place here when the
 match names a flowR symbol: without one the rule cannot tell the helper's own body apart from a call site, and

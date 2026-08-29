@@ -87,8 +87,8 @@ const vertexIs: ReplacementPattern = {
 	id:       'vertex-is',
 	selector: 'BinaryExpression[operator="==="][left.property.name="tag"][right.object.name="VertexType"]',
 	capture:  { vertex: 'left.object', type: 'right' },
-	replace:  '{{type|last}}Vertex.is({{vertex}})',
-	message:  'Use `{{type|last}}Vertex.is` here.'
+	replace:  'Vertex.is{{type|last}}({{vertex}})',
+	message:  'Use `Vertex.is{{type|last}}` here.'
 };
 const options = (patterns: readonly ReplacementPattern[]): [{ patterns: readonly ReplacementPattern[] }] => [{ patterns }];
 
@@ -127,14 +127,14 @@ plain.run('replacement-pattern', replacementPattern, {
 			}]
 		},
 		{
-			name:    '`{{type|last}}` names the matching helper',
+			name:    '`{{type|last}}` names the matching helper member',
 			code:    'const a = vertex.tag === VertexType.FunctionCall;',
 			options: options([vertexIs]),
 			errors:  [{
-				message:     'Use `FunctionCallVertex.is` here.',
+				message:     'Use `Vertex.isFunctionCall` here.',
 				suggestions: [{
-					desc:   'Replace with `FunctionCallVertex.is(vertex)`.',
-					output: 'const a = FunctionCallVertex.is(vertex);'
+					desc:   'Replace with `Vertex.isFunctionCall(vertex)`.',
+					output: 'const a = Vertex.isFunctionCall(vertex);'
 				}]
 			}]
 		},
@@ -245,12 +245,18 @@ const shapes = [
 	['(e.types & EdgeType.Reads) > 0',    'DfEdge.includesType(e, EdgeType.Reads)'],
 	['(e.types & EdgeType.Reads) === 0',  'DfEdge.doesNotIncludeType(e, EdgeType.Reads)'],
 	['!(e.types & EdgeType.Reads)',       'DfEdge.includesType(e, EdgeType.Reads)'],
-	['v.tag === VertexType.Use',          'UseVertex.is(v)'],
-	['v.tag !== VertexType.Use',          '!UseVertex.is(v)'],
-	['o?.tag === VertexType.FunctionCall', 'FunctionCallVertex.is(o)'],
-	['o?.tag !== VertexType.FunctionCall', '!FunctionCallVertex.is(o)'],
-	['FunctionCallVertex.is(v) && v.origin.includes("x")', 'FunctionCallVertex.hasOrigin(v, "x")'],
-	['g.outgoingEdges(1) ?? []',           'g.outgoingEdges(1) ?? NoEdges'],
+	['v.tag === VertexType.Use',          'Vertex.isUse(v)'],
+	['v.tag !== VertexType.Use',          '!Vertex.isUse(v)'],
+	['o?.tag === VertexType.FunctionCall', 'Vertex.isFunctionCall(o)'],
+	['o?.tag !== VertexType.FunctionCall', '!Vertex.isFunctionCall(o)'],
+	['Vertex.isFunctionCall(v) && v.origin.includes("x")', 'Vertex.hasOrigin(v, "x")'],
+	['g.outgoingEdges(1) ?? []',           'g.edgesFrom(1)'],
+	['g.outgoingEdges(1) ?? NoEdges',      'g.edgesFrom(1)'],
+	['g.ingoingEdges(1) ?? NoEdges',       'g.edgesTo(1)'],
+	['SourceRange.getStartLine(SourceLocation.getRange(loc))', 'SourceLocation.getStartLine(loc)'],
+	['SourceLocation.fromNode(node) ?? []',  'SourceLocation.at(node)'],
+	['loc === undefined ? undefined : SourceLocation.getStartLine(loc)', 'SourceLocation.getStartLine(loc)'],
+	['Identifier.toString(id ?? "")',      'Identifier.toString(id)'],
 	['n.type === RType.Symbol',            'RSymbol.is(n)'],
 	['n.type !== RType.Symbol',            '!RSymbol.is(n)'],
 	['m?.type === RType.FunctionCall',     'RFunctionCall.is(m)'],
@@ -270,15 +276,18 @@ const shapes = [
 
 /* `sameText` keeps the two halves apart, esquery alone cannot see that the halves name different nodes */
 const notReported = [
-	'FunctionCallVertex.is(v) && w.origin.includes("x")',
+	'Vertex.isFunctionCall(v) && w.origin.includes("x")',
 	'RFunctionCall.is(n) && k.named',
-	'RArgument.is(n) && k.name !== undefined'
+	'RArgument.is(n) && k.name !== undefined',
+	'other === undefined ? undefined : SourceLocation.getStartLine(loc)'
 ];
 
 const code = [
 	'import { EdgeType, type DfEdge } from "./dataflow/graph/edge";',
-	'import { VertexType, FunctionCallVertex, type Vertex } from "./dataflow/graph/vertex";',
+	'import { VertexType, Vertex } from "./dataflow/graph/vertex";',
 	'import { NoEdges, type Graph } from "./dataflow/graph/graph";',
+	'import { SourceRange, SourceLocation } from "./util/range";',
+	'import { Identifier } from "./dataflow/environments/identifier";',
 	'import { RType } from "./r-bridge/lang-4.x/ast/model/type";',
 	'import { RSymbol } from "./r-bridge/lang-4.x/ast/model/nodes/r-symbol";',
 	'import { RFunctionCall } from "./r-bridge/lang-4.x/ast/model/nodes/r-function-call";',
@@ -287,6 +296,8 @@ const code = [
 	'declare const e: DfEdge, v: Vertex, w: Vertex, o: Vertex | undefined, g: Graph;',
 	'declare const n: { type: RType }, k: { type: RType }, m: { type: RType } | undefined;',
 	'declare const s: RSymbol, l: number[], p: (x: number) => boolean;',
+	'declare const loc: SourceLocation | undefined, other: SourceLocation | undefined, id: Identifier | undefined;',
+	'declare const node: { info: { id: number } };',
 	'const { types } = e;',
 	'export const checks = [',
 	...shapes.map(([shape]) => `\t${shape},`),

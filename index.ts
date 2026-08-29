@@ -86,7 +86,41 @@ const config = [
 			'@stylistic/comma-dangle': ['error', 'only-multiline'],
 			'@stylistic/quotes':       ['error', 'single', { avoidEscape: true }],
 
+			/*
+			 * spacing that is already all but settled in flowR, pinned so it stays that way; every one of these
+			 * is autofixable, so a violation costs nobody a thought
+			 */
+			'@stylistic/array-bracket-spacing':         ['error', 'never'],
+			'@stylistic/computed-property-spacing':     ['error', 'never'],
+			'@stylistic/space-in-parens':               ['error', 'never'],
+			'@stylistic/block-spacing':                 ['error', 'always'],
+			'@stylistic/space-before-blocks':           ['error', 'always'],
+			'@stylistic/rest-spread-spacing':           ['error', 'never'],
+			'@stylistic/template-curly-spacing':        ['error', 'never'],
+			'@stylistic/switch-colon-spacing':          ['error', { before: false, after: true }],
+			'@stylistic/no-whitespace-before-property': 'error',
+			'@stylistic/space-unary-ops':               ['error', { words: true, nonwords: false }],
+			'@stylistic/semi-spacing':                  ['error', { before: false, after: true }],
+			'@stylistic/comma-style':                   ['error', 'last'],
+			'@stylistic/dot-location':                  ['error', 'property'],
+			'@stylistic/no-extra-semi':                 'error',
+
 			'jsdoc/check-alignment':           'error',
+			/*
+			 * the same alignment `key-spacing` asks of object values, asked of tsdoc: the `-` of every `@param`
+			 * in a block lines up, so the names read as a column instead of as prose
+			 */
+			'jsdoc/check-line-alignment':      ['error', 'always'],
+			/* `@param name - what it is`, the spelling the codebase already uses everywhere */
+			'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
+			'jsdoc/no-multi-asterisks':        'error',
+			'jsdoc/require-asterisk-prefix':   'error',
+			'jsdoc/no-blank-blocks':           'error',
+			'jsdoc/check-property-names':      'error',
+			'jsdoc/empty-tags':                'error',
+			'jsdoc/require-returns-check':     'error',
+			/* a block reads top down: what it is, what it takes, what it answers, then the pointers */
+			'jsdoc/sort-tags':                 ['error', { linesBetween: 0 }],
 			'jsdoc/check-indentation':         'off',
 			'jsdoc/no-types':                  'error',
 			'jsdoc/no-undefined-types':        'off',

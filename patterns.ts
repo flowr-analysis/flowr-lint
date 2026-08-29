@@ -15,6 +15,8 @@ const CALL_NODE = 'r-bridge/lang-4.x/ast/model/nodes/r-function-call';
 const ARGUMENT_NODE = 'r-bridge/lang-4.x/ast/model/nodes/r-argument';
 const SYMBOL_NODE = 'r-bridge/lang-4.x/ast/model/nodes/r-symbol';
 const LIST_NODE = 'r-bridge/lang-4.x/ast/model/nodes/r-expression-list';
+const RANGE = 'util/range';
+const IDENTIFIER = 'dataflow/environments/identifier';
 
 /** `x.types` under the given path */
 const types = (prefix: string): string => `[${prefix}.type="MemberExpression"][${prefix}.computed=false][${prefix}.property.name="types"]`;
@@ -31,6 +33,10 @@ const call = (prefix: string, property: string): string => `[${prefix}.type="Cal
 /** a call of `<Helper>.<property>(<one argument>)` under the given path */
 const helperCall = (prefix: string, helper: string, property: string): string =>
 	`${call(prefix, property)}[${prefix}.callee.object.name="${helper}"][${prefix}.arguments.length=1]`;
+/** the same call as the match itself rather than below it */
+const rootHelperCall = (helper: string, property: string): string =>
+	`CallExpression[callee.type="MemberExpression"][callee.computed=false][callee.property.name="${property}"]`
+	+ `[callee.object.name="${helper}"][arguments.length=1]`;
 /** `x === undefined` / `x !== undefined` under the given path */
 const versusUndefined = (prefix: string, set: boolean): string =>
 	`[${prefix}.type="BinaryExpression"][${prefix}.operator="${set ? '!==' : '==='}"][${prefix}.right.type="Identifier"][${prefix}.right.name="undefined"]`;
@@ -79,8 +85,8 @@ const edgeStates = (id: string, helper: string, what: string, nonZero: boolean):
  */
 const discriminatorIs = (
 	id: string,
-	{ property, enumName, enumFile, propertyFile, helper, hint }:
-	{ property: string, enumName: string, enumFile: string, propertyFile?: string, helper: string, hint: string },
+	{ property, enumName, enumFile, propertyFile, helper, member: name = 'is', hint }:
+	{ property: string, enumName: string, enumFile: string, propertyFile?: string, helper: string, member?: string, hint: string },
 	{ negated = false, optional = false } = {}
 ): ReplacementPattern => {
 	const left = optional ? 'left.expression' : 'left';
@@ -88,17 +94,20 @@ const discriminatorIs = (
 		id,
 		selector:   `BinaryExpression[operator="${negated ? '!==' : '==='}"][left.type="${optional ? 'ChainExpression' : 'MemberExpression'}"]${member(left, property)}${rightIs(enumName)}`,
 		capture:    { subject: `${left}.object`, type: 'right' },
-		replace:    `${negated ? '!' : ''}${helper}.is({{subject}})`,
+		replace:    `${negated ? '!' : ''}${helper}.${name}({{subject}})`,
 		declaredIn: { 'right.object': enumFile, ...propertyFile ? { [`${left}.property`]: propertyFile } : {} },
-		message:    `${hint} (\`${helper}.is\`), it narrows the type as well.`
+		message:    `${hint} (\`${helper}.${name}\`), it narrows the type as well.`
 	};
 };
 
-/** `v.tag === VertexType.X`, with `{{type|last}}` spelling the name of the matching helper */
+/**
+ * `v.tag === VertexType.X`. One `Vertex` helper answers for every kind, and its members are named after the
+ * enum, so `{{type|last}}` spells the check without a table: `VertexType.Use` to `Vertex.isUse`.
+ */
 const vertexIs = (id: string, options?: { negated?: boolean, optional?: boolean }): ReplacementPattern =>
 	discriminatorIs(id, {
 		property: 'tag', enumName: 'VertexType', enumFile: VERTEX, propertyFile: VERTEX,
-		helper:   '{{type|last}}Vertex', hint: 'Compare through the vertex helper'
+		helper:   'Vertex', member: 'is{{type|last}}', hint: 'Compare through the vertex helper'
 	}, options);
 
 /**
@@ -146,6 +155,24 @@ const symbolName = (id: string, negated: boolean): ReplacementPattern => ({
 	message:    'An `Identifier` is not its name: `pkg::{{name}}` is an array and never `===` a string. Compare `Identifier.getName({{symbol}}.content)`, or `Identifier.matches` when the namespace should count.'
 });
 
+/** an empty-array or `NoEdges` fallback, the two ways the absent case used to be written out */
+const emptyEdges = ':matches([right.type="ArrayExpression"][right.elements.length=0], [right.type="Identifier"][right.name="NoEdges"])';
+
+/**
+ * `graph.outgoingEdges(id) ?? <nothing>`, which `edgesFrom()`/`edgesTo()` already are: they answer with the
+ * shared empty map for a vertex without edges, so the fallback is dead weight and an `[]` one allocates on
+ * every miss besides. One pattern per direction, as the replacement names the method.
+ */
+const edgesFallback = (id: string, raw: 'outgoingEdges' | 'ingoingEdges', total: 'edgesFrom' | 'edgesTo'): ReplacementPattern => ({
+	id,
+	selector:   `LogicalExpression[operator="??"]${emptyEdges}[left.type="CallExpression"]`
+		+ `[left.callee.type="MemberExpression"][left.callee.computed=false][left.callee.property.name="${raw}"][left.arguments.length=1]`,
+	capture:    { graph: 'left.callee.object', id: 'left.arguments.0' },
+	replace:    `{{graph}}.${total}({{id}})`,
+	declaredIn: { 'left.callee.property': GRAPH },
+	message:    `\`${total}\` is \`${raw}\` without the fallback: it answers with the shared empty map itself.`
+});
+
 const patterns: readonly ReplacementPattern[] = [
 	edgeIsOnly('edge-is-only-type'),
 	edgeIsOnly('edge-is-not-only-type', { negated: true }),
@@ -155,6 +182,61 @@ const patterns: readonly ReplacementPattern[] = [
 	edgeStates('edge-has-no-type', 'hasNoType', 'nothing', false),
 	edgeMask('edge-includes-type', 'includesType', true),
 	edgeMask('edge-does-not-include-type', 'doesNotIncludeType', false),
+	{
+		/*
+		 * `SourceLocation.fromNode(n) ?? []` only exists so the positional destructure below it survives an
+		 * absent location; the view reads the same places by name and combines with `?.`
+		 */
+		id:         'location-at-node',
+		selector:   `LogicalExpression[operator="??"][right.type="ArrayExpression"][right.elements.length=0]${helperCall('left', 'SourceLocation', 'fromNode')}`,
+		capture:    { node: 'left.arguments.0' },
+		replace:    'SourceLocation.at({{node}})',
+		declaredIn: { 'left.callee.object': RANGE },
+		/* the destructure around it has to become property reads, which is the author's call */
+		fix:        false,
+		message:    '`SourceLocation.at({{node}})` answers with a view: `.startLine`, `.file`, and `?.` for the absent case, so the `?? []` and the positional destructure both go away.'
+	},
+	{
+		/*
+		 * every source range is a source location without a file, so the range readers take a location as it
+		 * is and `SourceLocation` re-exports them under its own name
+		 */
+		id:       'location-range-hop',
+		selector: 'CallExpression[callee.type="MemberExpression"][callee.computed=false]'
+			+ '[callee.object.name=/^Source(Range|Location)$/][arguments.length=1]'
+			+ `${helperCall('arguments.0', 'SourceLocation', 'getRange')}`,
+		capture:    { reader: 'callee.property', location: 'arguments.0.arguments.0' },
+		replace:    'SourceLocation.{{reader}}({{location}})',
+		declaredIn: { 'callee.object': RANGE, 'arguments.0.callee.object': RANGE },
+		message:    'Drop the `getRange` hop, `SourceLocation.{{reader}}` reads the location directly.'
+	},
+	{
+		/* the readers answer `undefined` for an absent input, so the guard repeats what the type already says */
+		id:       'accessor-undefined-guard',
+		selector: `ConditionalExpression${versusUndefined('test', false)}`
+			+ '[consequent.type="Identifier"][consequent.name="undefined"]'
+			+ '[alternate.type="CallExpression"][alternate.callee.type="MemberExpression"][alternate.callee.computed=false]'
+			+ '[alternate.callee.property.name=/^(get|format|view|at)/]'
+			+ '[alternate.callee.object.name=/^Source(Range|Location)$/][alternate.arguments.length=1]',
+		capture:    { call: 'alternate' },
+		replace:    '{{call}}',
+		sameText:   [['test.left', 'alternate.arguments.0']],
+		declaredIn: { 'alternate.callee.object': RANGE },
+		message:    'The reader passes an absent input through, the `=== undefined` guard says nothing on top of it.'
+	},
+	{
+		/* `Identifier.toString` answers `undefined` for an absent identifier, an empty name is a different thing */
+		id:       'identifier-tostring-fallback',
+		selector: `${rootHelperCall('Identifier', 'toString')}`
+			+ '[arguments.0.type="LogicalExpression"][arguments.0.operator="??"]'
+			+ '[arguments.0.right.type="Literal"][arguments.0.right.value=""]',
+		capture:    { id: 'arguments.0.left' },
+		replace:    'Identifier.toString({{id}})',
+		declaredIn: { 'callee.object': IDENTIFIER },
+		/* an empty string and `undefined` read differently downstream, so this is offered rather than applied */
+		fix:        false,
+		message:    '`Identifier.toString` passes an absent identifier through; the `?? \'\'` turns "no name" into the name `""`.'
+	},
 	{
 		id:         'edge-includes-type-truthy',
 		selector:   `:matches(IfStatement, ConditionalExpression, WhileStatement, DoWhileStatement, LogicalExpression, UnaryExpression[operator="!"], ArrowFunctionExpression) > BinaryExpression[operator="&"]${types('left')}`,
@@ -166,25 +248,18 @@ const patterns: readonly ReplacementPattern[] = [
 	{
 		id: 'vertex-has-origin',
 		selector: 'LogicalExpression[operator="&&"]'
-			+ `${helperCall('left', 'FunctionCallVertex', 'is')}`
+			+ `${helperCall('left', 'Vertex', 'isFunctionCall')}`
 			+ `${call('right', 'includes')}[right.callee.object.type="MemberExpression"][right.callee.object.property.name="origin"]`,
 		capture:    { vertex: 'left.arguments.0', origin: 'right.arguments.0' },
-		replace:    'FunctionCallVertex.hasOrigin({{vertex}}, {{origin}})',
+		replace:    'Vertex.hasOrigin({{vertex}}, {{origin}})',
 		declaredIn: { 'left.callee.object': VERTEX, 'right.callee.object.property': VERTEX },
 		sameText:   [['left.arguments.0', 'right.callee.object.object']],
 		/* `hasOrigin` is no type predicate, so the replacement can drop a narrowing the code below relies on */
 		fix:        false,
-		message:    'Use `FunctionCallVertex.hasOrigin`, it is exactly this check. Check the narrowing first, `hasOrigin` returns a plain boolean.'
+		message:    'Use `Vertex.hasOrigin`, it is exactly this check. Check the narrowing first, `hasOrigin` returns a plain boolean.'
 	},
-	{
-		/* the `[]` fallback allocates on every miss, and these sit in traversal loops */
-		id:         'graph-edges-no-alloc',
-		selector:   'LogicalExpression[operator="??"][right.type="ArrayExpression"][right.elements.length=0][left.type="CallExpression"][left.callee.type="MemberExpression"][left.callee.property.name=/^(outgoingEdges|ingoingEdges)$/]',
-		capture:    { edges: 'left' },
-		replace:    '{{edges}} ?? NoEdges',
-		declaredIn: { 'left.callee.property': GRAPH },
-		message:    'The `[]` fallback allocates on every miss, use the shared `NoEdges`.'
-	},
+	edgesFallback('graph-edges-from', 'outgoingEdges', 'edgesFrom'),
+	edgesFallback('graph-edges-to', 'ingoingEdges', 'edgesTo'),
 	vertexIs('vertex-is'),
 	vertexIs('vertex-is-not', { negated: true }),
 	vertexIs('vertex-is-optional', { optional: true }),
