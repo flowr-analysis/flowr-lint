@@ -80,7 +80,7 @@ The shipped set groups into families:
 | family | shape it finds | helper it points at |
 | :-- | :-- | :-- |
 | `edge-*` | `e.types === T`, `(e.types & T) !== 0`, and the bitmask spellings around them | `DfEdge` |
-| `vertex-is*`, `vertex-has-origin` | `v.tag === VertexType.X`, `Vertex.isFunctionCall(v) && v.origin.includes(o)` | `Vertex` |
+| `vertex-is*`, `vertex-has-origin` | `v.tag === VertexType.X`, `DfgVertex.isFunctionCall(v) && v.origin.includes(o)` | `DfgVertex` |
 | `node-is*` | `n.type === RType.X`, negated and through `?.` | `RSymbol`, `RFunctionCall`, and the rest of the `R*` node objects |
 | `argument-is-*`, `call-is-*`, `list-is-implicit` | a guard written out, `RFunctionCall.is(n) && n.named` | the narrower guard of the same object |
 | `symbol-name-comparison*` | `symbol.content === 'name'`, which misses `pkg::name` because an identifier with a namespace is an array | `Identifier.getName` / `Identifier.matches` |

@@ -87,8 +87,8 @@ const vertexIs: ReplacementPattern = {
 	id:       'vertex-is',
 	selector: 'BinaryExpression[operator="==="][left.property.name="tag"][right.object.name="VertexType"]',
 	capture:  { vertex: 'left.object', type: 'right' },
-	replace:  'Vertex.is{{type|last}}({{vertex}})',
-	message:  'Use `Vertex.is{{type|last}}` here.'
+	replace:  'DfgVertex.is{{type|last}}({{vertex}})',
+	message:  'Use `DfgVertex.is{{type|last}}` here.'
 };
 const options = (patterns: readonly ReplacementPattern[]): [{ patterns: readonly ReplacementPattern[] }] => [{ patterns }];
 
@@ -131,10 +131,10 @@ plain.run('replacement-pattern', replacementPattern, {
 			code:    'const a = vertex.tag === VertexType.FunctionCall;',
 			options: options([vertexIs]),
 			errors:  [{
-				message:     'Use `Vertex.isFunctionCall` here.',
+				message:     'Use `DfgVertex.isFunctionCall` here.',
 				suggestions: [{
-					desc:   'Replace with `Vertex.isFunctionCall(vertex)`.',
-					output: 'const a = Vertex.isFunctionCall(vertex);'
+					desc:   'Replace with `DfgVertex.isFunctionCall(vertex)`.',
+					output: 'const a = DfgVertex.isFunctionCall(vertex);'
 				}]
 			}]
 		},
@@ -245,11 +245,11 @@ const shapes = [
 	['(e.types & EdgeType.Reads) > 0',    'DfEdge.includesType(e, EdgeType.Reads)'],
 	['(e.types & EdgeType.Reads) === 0',  'DfEdge.doesNotIncludeType(e, EdgeType.Reads)'],
 	['!(e.types & EdgeType.Reads)',       'DfEdge.includesType(e, EdgeType.Reads)'],
-	['v.tag === VertexType.Use',          'Vertex.isUse(v)'],
-	['v.tag !== VertexType.Use',          '!Vertex.isUse(v)'],
-	['o?.tag === VertexType.FunctionCall', 'Vertex.isFunctionCall(o)'],
-	['o?.tag !== VertexType.FunctionCall', '!Vertex.isFunctionCall(o)'],
-	['Vertex.isFunctionCall(v) && v.origin.includes("x")', 'Vertex.hasOrigin(v, "x")'],
+	['v.tag === VertexType.Use',          'DfgVertex.isUse(v)'],
+	['v.tag !== VertexType.Use',          '!DfgVertex.isUse(v)'],
+	['o?.tag === VertexType.FunctionCall', 'DfgVertex.isFunctionCall(o)'],
+	['o?.tag !== VertexType.FunctionCall', '!DfgVertex.isFunctionCall(o)'],
+	['DfgVertex.isFunctionCall(v) && v.origin.includes("x")', 'DfgVertex.hasOrigin(v, "x")'],
 	['g.outgoingEdges(1) ?? []',           'g.edgesFrom(1)'],
 	['g.outgoingEdges(1) ?? NoEdges',      'g.edgesFrom(1)'],
 	['g.ingoingEdges(1) ?? NoEdges',       'g.edgesTo(1)'],
@@ -276,7 +276,7 @@ const shapes = [
 
 /* `sameText` keeps the two halves apart, esquery alone cannot see that the halves name different nodes */
 const notReported = [
-	'Vertex.isFunctionCall(v) && w.origin.includes("x")',
+	'DfgVertex.isFunctionCall(v) && w.origin.includes("x")',
 	'RFunctionCall.is(n) && k.named',
 	'RArgument.is(n) && k.name !== undefined',
 	'other === undefined ? undefined : SourceLocation.getStartLine(loc)'
@@ -284,7 +284,7 @@ const notReported = [
 
 const code = [
 	'import { EdgeType, type DfEdge } from "./dataflow/graph/edge";',
-	'import { VertexType, Vertex } from "./dataflow/graph/vertex";',
+	'import { VertexType, DfgVertex, type Vertex } from "./dataflow/graph/vertex";',
 	'import { NoEdges, type Graph } from "./dataflow/graph/graph";',
 	'import { SourceRange, SourceLocation } from "./util/range";',
 	'import { Identifier } from "./dataflow/environments/identifier";',

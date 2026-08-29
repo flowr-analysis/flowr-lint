@@ -107,14 +107,21 @@ const config = [
 
 			'jsdoc/check-alignment':           'error',
 			/*
-			 * the same alignment `key-spacing` asks of object values, asked of tsdoc: the `-` of every `@param`
-			 * in a block lines up, so the names read as a column instead of as prose.
+			 * `jsdoc/check-line-alignment` is deliberately NOT enabled. Lining up what the tags declare reads
+			 * well, but 'always' reaches past the tags: it re-flows every hand-wrapped line to the margin, and
+			 * that indentation is the author's and carries meaning -- a `@param` description hung under its
+			 * first line, or the nested call in an R example that only its indentation ties to the call around
+			 * it:
 			 *
-			 * `disableWrapIndent` keeps its hands off every line after the first: a continuation is indented
-			 * because the author meant something by it -- a hanging list, or a nested call in an R example
-			 * whose indentation is what links it to the call around it -- and re-flowing that loses the point.
+			 * ```r
+			 * test_that("my test", {
+			 *    assert_equal(1 + 1, 2)
+			 * })
+			 * ```
+			 *
+			 * Neither `preserveMainDescriptionPostDelimiter` nor `disableWrapIndent` stops it doing that to a
+			 * tag's continuation lines, so the alignment is left to the author, like the delimiter style is.
 			 */
-			'jsdoc/check-line-alignment':      ['error', 'always', { disableWrapIndent: true }],
 			/* `@param name - what it is`, the spelling the codebase already uses everywhere */
 			'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
 			'jsdoc/no-multi-asterisks':        'error',

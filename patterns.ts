@@ -101,13 +101,13 @@ const discriminatorIs = (
 };
 
 /**
- * `v.tag === VertexType.X`. One `Vertex` helper answers for every kind, and its members are named after the
- * enum, so `{{type|last}}` spells the check without a table: `VertexType.Use` to `Vertex.isUse`.
+ * `v.tag === VertexType.X`. One `DfgVertex` helper answers for every kind, and its members are named after
+ * the enum, so `{{type|last}}` spells the check without a table: `VertexType.Use` to `DfgVertex.isUse`.
  */
 const vertexIs = (id: string, options?: { negated?: boolean, optional?: boolean }): ReplacementPattern =>
 	discriminatorIs(id, {
 		property: 'tag', enumName: 'VertexType', enumFile: VERTEX, propertyFile: VERTEX,
-		helper:   'Vertex', member: 'is{{type|last}}', hint: 'Compare through the vertex helper'
+		helper:   'DfgVertex', member: 'is{{type|last}}', hint: 'Compare through the vertex helper'
 	}, options);
 
 /**
@@ -248,15 +248,15 @@ const patterns: readonly ReplacementPattern[] = [
 	{
 		id: 'vertex-has-origin',
 		selector: 'LogicalExpression[operator="&&"]'
-			+ `${helperCall('left', 'Vertex', 'isFunctionCall')}`
+			+ `${helperCall('left', 'DfgVertex', 'isFunctionCall')}`
 			+ `${call('right', 'includes')}[right.callee.object.type="MemberExpression"][right.callee.object.property.name="origin"]`,
 		capture:    { vertex: 'left.arguments.0', origin: 'right.arguments.0' },
-		replace:    'Vertex.hasOrigin({{vertex}}, {{origin}})',
+		replace:    'DfgVertex.hasOrigin({{vertex}}, {{origin}})',
 		declaredIn: { 'left.callee.object': VERTEX, 'right.callee.object.property': VERTEX },
 		sameText:   [['left.arguments.0', 'right.callee.object.object']],
 		/* `hasOrigin` is no type predicate, so the replacement can drop a narrowing the code below relies on */
 		fix:        false,
-		message:    'Use `Vertex.hasOrigin`, it is exactly this check. Check the narrowing first, `hasOrigin` returns a plain boolean.'
+		message:    'Use `DfgVertex.hasOrigin`, it is exactly this check. Check the narrowing first, `hasOrigin` returns a plain boolean.'
 	},
 	edgesFallback('graph-edges-from', 'outgoingEdges', 'edgesFrom'),
 	edgesFallback('graph-edges-to', 'ingoingEdges', 'edgesTo'),
