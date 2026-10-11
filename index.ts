@@ -6,7 +6,6 @@ import stylistic from '@stylistic/eslint-plugin';
 import jsdoc from 'eslint-plugin-jsdoc';
 import tsdoc from 'eslint-plugin-tsdoc';
 import unusedImports from 'eslint-plugin-unused-imports';
-import checkFile from 'eslint-plugin-check-file';
 import importX from 'eslint-plugin-import-x';
 import unicorn from 'eslint-plugin-unicorn';
 import flowr from './plugin';
@@ -38,7 +37,6 @@ const config = [
 			'@stylistic':         stylistic,
 			'import-x':           importX,
 			'unused-imports':     unusedImports,
-			'check-file':         checkFile,
 			tsdoc,
 			jsdoc,
 			flowr,
@@ -191,12 +189,7 @@ const config = [
 				}
 			}],
 
-			'check-file/filename-naming-convention': ['error', {
-				'**/*.ts': '?(\\d+-)?([A-Z])+([a-z])*((-|.)?([A-Z])+([a-z]))'
-			}],
-			'check-file/folder-match-with-fex': ['error', {
-				'*.spec.{js,jsx,ts,tsx}': 'test/**'
-			}],
+			'flowr/file-naming': 'error',
 
 			'@stylistic/no-trailing-spaces': 'error',
 			'@stylistic/space-infix-ops':    ['error', { int32Hint: false }],

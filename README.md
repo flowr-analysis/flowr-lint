@@ -19,7 +19,9 @@ configuration from your `tsdoc.json`:
 ## The `flowr` plugin
 
 flowR groups its functions in helper objects (`DfEdge`, `Resolve`, `NodeId`, and friends) so that there is one obvious
-entry point per topic. Two rules keep the code on those entry points, both on by default.
+entry point per topic. Two rules keep the code on those entry points, both on by default. A third,
+`flowr/file-naming`, checks file names (`dataflow-graph.ts`, `1-setup.ts`, `Vertex.ts`) and keeps `*.spec.ts` files
+below `test/`.
 
 | rule | driven by | finds |
 | :-- | :-- | :-- |

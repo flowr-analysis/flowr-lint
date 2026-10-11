@@ -8,6 +8,7 @@ import type { ReplacementPattern } from '../pattern-type.js';
 import defaults from '../patterns.js';
 import useInstead from '../rules/use-instead.js';
 import replacementPattern from '../rules/replacement-pattern.js';
+import fileNaming from '../rules/file-naming.js';
 import { declarationFile, symbolOf, typeServices } from '../rules/util.js';
 
 /*
@@ -91,6 +92,20 @@ const vertexIs: ReplacementPattern = {
 	message:  'Use `DfgVertex.is{{type|last}}` here.'
 };
 const options = (patterns: readonly ReplacementPattern[]): [{ patterns: readonly ReplacementPattern[] }] => [{ patterns }];
+
+plain.run('file-naming', fileNaming, {
+	valid: [
+		{ code: '', filename: 'src/dataflow-graph.ts' },
+		{ code: '', filename: 'src/1-setup.Vertex.ts' },
+		{ code: '', filename: 'test/r-bridge.test.ts' },
+		{ code: '', filename: 'test/unit/my.spec.ts' }
+	],
+	invalid: [
+		{ code: '', filename: 'src/dataflowGraph.ts', errors: [{ messageId: 'name' }] },
+		{ code: '', filename: 'src/vertex2.ts', errors: [{ messageId: 'name' }] },
+		{ code: '', filename: 'src/my.spec.ts', errors: [{ messageId: 'spec' }] }
+	]
+});
 
 plain.run('replacement-pattern', replacementPattern, {
 	valid: [
