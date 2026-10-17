@@ -33,6 +33,51 @@ function render(template: string, captures: Readonly<Record<string, string>>, no
 	return failed ? undefined : filled;
 }
 
+/** the name a replacement calls, `escapeRegex` for `escapeRegex(s)` and `toBuiltIn` for `!NodeId.toBuiltIn(x)` */
+function calledBy(replacement: string): string | undefined {
+	return /^!?(?:[A-Za-z_$][\w$]*\.)*([A-Za-z_$][\w$]*)\(/.exec(replacement)?.[1];
+}
+
+/** the name a function is declared or bound under, as a declaration, an object member, or a variable */
+function nameOf(fn: Node, parent: Node | undefined): string | undefined {
+	if(fn.type === 'FunctionDeclaration' || fn.type === 'FunctionExpression') {
+		if(fn.id) {
+			return fn.id.name;
+		}
+	}
+	if(parent?.type === 'Property' || parent?.type === 'MethodDefinition') {
+		return parent.key.type === 'Identifier' ? parent.key.name : undefined;
+	}
+	return parent?.type === 'VariableDeclarator' && parent.id.type === 'Identifier' ? parent.id.name : undefined;
+}
+
+/** Whether `node` sits in the function the replacement would call, where the fix would make the helper call itself. */
+function withinReplacement(node: Node, replacement: string, sourceCode: Rule.RuleContext['sourceCode']): boolean {
+	const called = calledBy(replacement);
+	if(called === undefined) {
+		return false;
+	}
+	const ancestors = sourceCode.getAncestors(node);
+	return ancestors.some((fn, i) => (fn.type === 'FunctionDeclaration' || fn.type === 'FunctionExpression' || fn.type === 'ArrowFunctionExpression')
+		&& nameOf(fn, ancestors[i - 1]) === called);
+}
+
+/** per program, whether one of its files matches a `helperIn` path; every file of a run shares the program */
+const helperFiles = new WeakMap<object, Map<string, boolean>>();
+
+function programHas(program: { getSourceFiles(): readonly { fileName: string }[] }, path: string): boolean {
+	let known = helperFiles.get(program);
+	if(known === undefined) {
+		helperFiles.set(program, known = new Map<string, boolean>());
+	}
+	let has = known.get(path);
+	if(has === undefined) {
+		has = program.getSourceFiles().some(file => file.fileName.replaceAll('\\', '/').includes(path));
+		known.set(path, has);
+	}
+	return has;
+}
+
 const rule: Rule.RuleModule = {
 	meta: {
 		type:           'suggestion',
@@ -61,6 +106,8 @@ const rule: Rule.RuleModule = {
 							replace:    { type: 'string' },
 							/** path to a substring of the file its symbol must be declared in, this is what keeps the pattern flowR-specific */
 							declaredIn: { type: 'object', additionalProperties: { type: 'string' } },
+							/** path to a substring of the file the replacement's helper lives in, the pattern is silent in a program without it */
+							helperIn:   { type: 'string' },
 							/** pairs of paths that have to spell the same code, esquery has no back-references */
 							sameText:   { type: 'array', items: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 2 } },
 							/** `true` forces the autofix, `false` forces a suggestion; by default it is fixed when the replacement is already in scope */
@@ -99,7 +146,9 @@ const rule: Rule.RuleModule = {
 		 * The declaring file itself is exempt, it is where the helper is built.
 		 */
 		function isFlowr(node: Node, pattern: ReplacementPattern): boolean {
-			if(!pattern.declaredIn) {
+			if(pattern.helperIn !== undefined && (!services || !programHas(services.program, pattern.helperIn))) {
+				return false;
+			} else if(!pattern.declaredIn) {
 				return true;
 			} else if(!services || !checker) {
 				return false;
@@ -127,7 +176,9 @@ const rule: Rule.RuleModule = {
 			const replacement = render(pattern.replace, captures, node, sourceCode);
 			const message = (pattern.message === undefined ? undefined : render(pattern.message, captures, node, sourceCode))
 				?? (replacement ? `Use \`${replacement}\` here.` : `\`${pattern.id ?? pattern.selector}\` has a helper replacement.`);
-			if(replacement === undefined) {
+			if(replacement !== undefined && withinReplacement(node, replacement, sourceCode)) {
+				return;
+			} else if(replacement === undefined) {
 				context.report({ node, messageId: 'replacement', data: { message } });
 				return;
 			}

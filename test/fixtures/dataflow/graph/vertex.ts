@@ -1,6 +1,6 @@
 export enum VertexType { Use = 'use', FunctionCall = 'fcall' }
 
-export interface Vertex { tag: VertexType, origin: string[] }
+export interface Vertex { tag: VertexType, origin: string[], name: string }
 
 export const DfgVertex = {
 	isUse(vertex?: Vertex): vertex is Vertex {

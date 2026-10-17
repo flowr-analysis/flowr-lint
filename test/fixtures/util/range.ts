@@ -4,6 +4,12 @@ export type SourceLocation = [...r: SourceRange, f?: string];
 export const SourceRange = {
 	getStartLine(range?: SourceLocation): number | undefined {
 		return range?.[0];
+	},
+	fromNode(node?: unknown): SourceLocation | undefined {
+		return node === undefined ? undefined : [1, 1, 1, 1];
+	},
+	ownFromNode(node?: unknown): SourceLocation | undefined {
+		return node === undefined ? undefined : [1, 1, 1, 1];
 	}
 };
 

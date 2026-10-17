@@ -19,10 +19,10 @@ const config = [
 	jsdoc.configs['flat/recommended-typescript'],
 	{
 		languageOptions: {
-			ecmaVersion: 'latest',
-			sourceType:  'module',
-			globals:     { ...globals.node },
-			parser:      tsParser,
+			ecmaVersion:   'latest',
+			sourceType:    'module',
+			globals:       { ...globals.node },
+			parser:        tsParser,
 			parserOptions: {
 				projectService: true
 			}
@@ -44,7 +44,7 @@ const config = [
 		},
 		rules: {
 			/* point at the helper object named by the `@useInstead` tag of a declaration */
-			'flowr/use-instead': 'error',
+			'flowr/use-instead':         'error',
 			/* the hand-written forms of the helper calls, see `patterns.js` */
 			'flowr/replacement-pattern': ['error', { patterns: flowrPatterns }],
 
@@ -53,7 +53,8 @@ const config = [
 			 * so it would force every consumer to strip it again before bundling. */
 			'no-restricted-imports': ['error', {
 				patterns: [{
-					group:   ['node:*', 'node:*/*'],
+					/* `node:test` has no bare name */
+					group:   ['node:*', 'node:*/*', '!node:test'],
 					message: 'Import the bare module (`path`, not `node:path`) so a bundler can swap it for a browser polyfill.'
 				}]
 			}],
@@ -103,7 +104,7 @@ const config = [
 			'@stylistic/dot-location':                  ['error', 'property'],
 			'@stylistic/no-extra-semi':                 'error',
 
-			'jsdoc/check-alignment':           'error',
+			'jsdoc/check-alignment':                         'error',
 			/*
 			 * `jsdoc/check-line-alignment` is deliberately NOT enabled. Lining up what the tags declare reads
 			 * well, but 'always' reaches past the tags: it re-flows every hand-wrapped line to the margin, and
@@ -122,28 +123,28 @@ const config = [
 			 */
 			/* `@param name - what it is`, the spelling the codebase already uses everywhere */
 			'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
-			'jsdoc/no-multi-asterisks':        'error',
-			'jsdoc/require-asterisk-prefix':   'error',
-			'jsdoc/no-blank-blocks':           'error',
-			'jsdoc/check-property-names':      'error',
-			'jsdoc/empty-tags':                'error',
-			'jsdoc/require-returns-check':     'error',
+			'jsdoc/no-multi-asterisks':                      'error',
+			'jsdoc/require-asterisk-prefix':                 'error',
+			'jsdoc/no-blank-blocks':                         'error',
+			'jsdoc/check-property-names':                    'error',
+			'jsdoc/empty-tags':                              'error',
+			'jsdoc/require-returns-check':                   'error',
 			/* a block reads top down: what it is, what it takes, what it answers, then the pointers */
-			'jsdoc/sort-tags':                 ['error', { linesBetween: 0 }],
-			'jsdoc/check-indentation':         'off',
-			'jsdoc/no-types':                  'error',
-			'jsdoc/no-undefined-types':        'off',
-			'jsdoc/check-tag-names':           'off',
-			'jsdoc/require-param':             'off',
-			'jsdoc/require-description':       'off',
-			'jsdoc/require-param-description': 'off',
-			'jsdoc/require-returns':           'off',
-			'jsdoc/require-property':          'off',
-			'jsdoc/require-throws':            'off',
-			'jsdoc/require-throws-type':       'off',
-			'jsdoc/require-file-overview':     'off',
-			'jsdoc/check-param-names':         'off',
-			'jsdoc/require-jsdoc':             ['error', {
+			'jsdoc/sort-tags':                               ['error', { linesBetween: 0 }],
+			'jsdoc/check-indentation':                       'off',
+			'jsdoc/no-types':                                'error',
+			'jsdoc/no-undefined-types':                      'off',
+			'jsdoc/check-tag-names':                         'off',
+			'jsdoc/require-param':                           'off',
+			'jsdoc/require-description':                     'off',
+			'jsdoc/require-param-description':               'off',
+			'jsdoc/require-returns':                         'off',
+			'jsdoc/require-property':                        'off',
+			'jsdoc/require-throws':                          'off',
+			'jsdoc/require-throws-type':                     'off',
+			'jsdoc/require-file-overview':                   'off',
+			'jsdoc/check-param-names':                       'off',
+			'jsdoc/require-jsdoc':                           ['error', {
 				publicOnly:   true,
 				checkGetters: false,
 				checkSetters: false,

@@ -72,6 +72,7 @@ To add one, append to [`patterns.ts`](patterns.ts):
 | `replace` | the replacement, required. `{{name}}` is a capture's source text, `{{name\|last}}` keeps the part behind its last dot, turning `VertexType.Use` into `Use` |
 | `capture` | name to a path relative to the match |
 | `declaredIn` | path to a file the node's symbol must come from, so an unrelated `types` or `tag` does not match. The declaring file itself is exempt |
+| `helperIn` | path to the file the replacement's helper lives in, for a shape without a flowR symbol to pin; in a program without that file the pattern stays silent |
 | `sameText` | pairs of paths that must spell the same code, esquery has no back-references |
 | `message` | what to tell the reader, filled from the captures like `replace` |
 | `fix` | `true` always fixes, `false` always suggests, which is right when the replacement can change type narrowing. Omitted, it fixes when the replacement is in scope |
@@ -84,16 +85,25 @@ The shipped set groups into families:
 | `edge-*` | `e.types === T`, `(e.types & T) !== 0`, and the bitmask spellings around them | `DfEdge` |
 | `vertex-is*`, `vertex-has-origin` | `v.tag === VertexType.X`, `DfgVertex.isFunctionCall(v) && v.origin.includes(o)` | `DfgVertex` |
 | `node-is*` | `n.type === RType.X`, negated and through `?.` | `RSymbol`, `RFunctionCall`, and the rest of the `R*` node objects |
-| `argument-is-*`, `call-is-*`, `list-is-implicit` | a guard written out, `RFunctionCall.is(n) && n.named` | the narrower guard of the same object |
+| `argument-is-*`, `call-is-*`, `list-is-implicit` | a guard written out, `RFunctionCall.is(n) && n.named`, `RFunctionCall.isNamed(c) && Identifier.getName(c.functionName.content) === 'f'` (also with a set's `has`, and negated) | the narrower guard of the same object, `RFunctionCall.isNamed(c, 'f')` |
 | `symbol-name-comparison*` | `symbol.content === 'name'`, which misses `pkg::name` because an identifier with a namespace is an array | `Identifier.getName` / `Identifier.matches` |
 | `graph-edges-from`, `graph-edges-to` | `g.outgoingEdges(id) ?? []` / `?? NoEdges`, a fallback the total accessors already are | `edgesFrom` / `edgesTo` |
 | `location-range-hop`, `location-at-node`, `accessor-undefined-guard`, `identifier-tostring-fallback` | an unwrap, a positional destructure, or an absent-value guard in front of a reader that passes `undefined` through by itself | `SourceLocation`, `Identifier` |
+| `node-lexeme*`, `node-own-lexeme*`, `node-range*`, `node-own-range*`, `range-*`, `node-id-recover-name` | `x.info.fullLexeme ?? x.lexeme`, `x.info.fullRange ?? x.location` (and the reverse orders), `range?.[0]`, `idMap.get(id)?.lexeme` | `RNode.lexeme`, `RNode.ownLexeme`, `SourceRange.fromNode`, `SourceRange.ownFromNode` and the range readers, `NodeId.recoverName` |
+| `unpack-arg*`, `find-named-arg*`, `call-sole-argument`, `call-called-name*`, `callee-lexeme-comparison*` | argument and callee reads written out, `lexeme` compared against a name | `RArgument.valueOf`, `RArgument.findNamed`, `RFunctionCall.soleArgument`, `calledName`, `isNamed` |
+| `vertex-origin-includes`, `vertex-lacks-origin`, `vertex-has-origin-array`, `vertex-name-comparison*` | origin lists read by hand, a call compared by its spelling | `DfgVertex.hasOrigin`, `Dataflow.qualify` |
+| `edge-targets`, `edge-sources`, `edge-has-type-between`, `graph-vertices-of-type`, `environment-frames` | walks over edges, vertices and environment frames spelled out | `Dataflow.targetsOf`, `Dataflow.sourcesOf`, `Dataflow.hasEdge`, `verticesOfType`, `REnvironment.frames` |
+| `built-in-id-*`, `to-built-in-*` | the `built-in:` prefix handled by hand | `NodeId.isBuiltIn`, `NodeId.toBuiltIn` |
+| `remove-r-quotes`, `escape-regex`, `identifier-split`, `unique-array*`, `array-equal`, `sort-code-unit` | text, set and array chores with a helper | `RString.unquote`, `escapeRegex`, `Identifier.parse`, `uniqueArray`, `arrayEqual`, `compareByCodeUnit` |
 | `some-instead-of-filter-length`, `array-sum` | a full walk where a helper does it once | `some`, `arraySum` |
 
 A pattern is exempt in the file `declaredIn` resolves to, which is why a shape only earns a place here when the
 match names a flowR symbol: without one the rule cannot tell the helper's own body apart from a call site, and
 `@lintIgnore` on the declaration would be papering over that. A guard that *is* the raw comparison
 (`RSymbol.is` compares `type` against `RType.Symbol`) is the case the tag is actually for.
+
+A match inside a function named like the one the replacement calls is never reported either: that is the helper's
+own body (`escapeRegex` spelling out the class it escapes), where the fix would make the helper call itself.
 
 An own `patterns` array replaces the defaults rather than merging with them. To propose one, open an issue with the
 [replacement pattern template](.github/ISSUE_TEMPLATE/replacement-pattern.yaml).

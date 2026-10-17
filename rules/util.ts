@@ -6,10 +6,10 @@ import type { Rule, Scope, SourceCode } from 'eslint';
 import type { Comment, Node } from 'estree';
 import type { TsSymbol, TsTypeChecker, TypeServices } from './ts-types';
 
-const USE_INSTEAD_TAG = 'useInstead';
-const SUPPRESS_TAG = '@lintIgnore';
+const UseInsteadTag = 'useInstead';
+const SuppressTag = '@lintIgnore';
 /* ts.SymbolFlags.Alias, spelled out to keep typescript out of the dependencies */
-const ALIAS_FLAG = 1 << 21;
+const AliasFlag = 1 << 21;
 
 /** The type-aware services, or `undefined` if the file is parsed without a program. */
 export function typeServices(context: Rule.RuleContext): TypeServices | undefined {
@@ -40,7 +40,7 @@ function silences(comment: Comment, ids: readonly string[]): boolean {
  */
 export function suppressed(context: Rule.RuleContext, node: Rule.Node, ids: readonly string[]): boolean {
 	const sourceCode = context.sourceCode;
-	if(!sourceCode.text.includes(SUPPRESS_TAG)) {
+	if(!sourceCode.text.includes(SuppressTag)) {
 		return false;
 	}
 	/* a header comment marks the whole file: above the imports, or separated by a blank line */
@@ -55,7 +55,7 @@ export function suppressed(context: Rule.RuleContext, node: Rule.Node, ids: read
 		/* `export function f()` carries its documentation on the export */
 		const parent = current.parent as Rule.Node | undefined;
 		const documented = parent?.type === 'ExportNamedDeclaration' || parent?.type === 'ExportDefaultDeclaration' ? parent : current;
-		if(sourceCode.getCommentsBefore(documented as Node).some(c => silences(c, ids))) {
+		if(sourceCode.getCommentsBefore(documented).some(c => silences(c, ids))) {
 			return true;
 		}
 	}
@@ -64,7 +64,7 @@ export function suppressed(context: Rule.RuleContext, node: Rule.Node, ids: read
 
 /** Resolves import aliases so the documentation of the original declaration is read. */
 function resolveAlias(symbol: TsSymbol, checker: TsTypeChecker): TsSymbol {
-	return (symbol.flags & ALIAS_FLAG) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;
+	return (symbol.flags & AliasFlag) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;
 }
 
 /** The symbol an ESTree node resolves to, with import aliases followed. */
@@ -82,7 +82,7 @@ export function declarationFile(symbol: TsSymbol | undefined): string | undefine
 /** The text of the `@useInstead` tag of a symbol, `undefined` if it carries none. */
 export function useInsteadOf(symbol: TsSymbol, checker: TsTypeChecker): string | undefined {
 	for(const tag of symbol.getJsDocTags(checker)) {
-		if(tag.name === USE_INSTEAD_TAG) {
+		if(tag.name === UseInsteadTag) {
 			return (tag.text ?? []).map(p => p.text).join('').trim();
 		}
 	}

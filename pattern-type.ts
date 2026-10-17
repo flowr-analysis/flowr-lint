@@ -11,6 +11,8 @@ export interface ReplacementPattern {
 	readonly replace:     string;
 	/** path to a substring of the file its symbol must be declared in */
 	readonly declaredIn?: Readonly<Record<string, string>>;
+	/** path to a substring of the file the replacement's helper lives in; without that file in the program the pattern stays silent */
+	readonly helperIn?:   string;
 	/** pairs of paths that have to spell the same code */
 	readonly sameText?:   readonly (readonly string[])[];
 	/** `true` forces the autofix, `false` forces a suggestion */

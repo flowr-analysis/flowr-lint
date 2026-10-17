@@ -26,6 +26,6 @@ export interface TsTypeChecker {
 
 /** What typescript-eslint hands to a type-aware rule. */
 export interface TypeServices {
-	program:               { getTypeChecker(): TsTypeChecker };
+	program:               { getTypeChecker(): TsTypeChecker, getSourceFiles(): readonly { fileName: string }[] };
 	esTreeNodeToTSNodeMap: { get(node: unknown): unknown };
 }

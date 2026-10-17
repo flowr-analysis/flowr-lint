@@ -1,15 +1,16 @@
 import { RType } from '../type';
+import type { RSymbol } from './r-symbol';
 
-export interface RArgument { type: RType.Argument, name?: string, value?: unknown }
+export interface RArgument { type: RType.Argument, name?: RSymbol, value?: unknown }
 
 export const RArgument = {
 	is(node?: { type: RType }): node is RArgument {
 		return node?.type === RType.Argument;
 	},
-	isEmpty(node: unknown): boolean {
+	isEmpty(node: unknown): node is '<>' {
 		return node === '<>';
 	},
-	isNotEmpty(node: unknown): boolean {
+	isNotEmpty<T>(node: T): node is Exclude<T, '<>'> {
 		return node !== '<>';
 	},
 	isNamed(node?: { type: RType }): node is RArgument {
