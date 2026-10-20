@@ -74,6 +74,116 @@ export function symbolOf(node: Node | undefined, services: TypeServices, checker
 	return symbol ? resolveAlias(symbol, checker) : undefined;
 }
 
+/** the name node a function is declared or bound under: a declaration, a member of an object or class, a variable, or an assignment */
+function nameOf(fn: Node, parent: Node | undefined): Node | undefined {
+	if((fn.type === 'FunctionDeclaration' || fn.type === 'FunctionExpression') && fn.id) {
+		return fn.id;
+	}
+	switch(parent?.type) {
+		case 'Property': case 'MethodDefinition': case 'PropertyDefinition':
+			return parent.key;
+		case 'VariableDeclarator':
+			return parent.id;
+		case 'AssignmentExpression':
+			return parent.left.type === 'MemberExpression' ? parent.left.property : parent.left;
+		default:
+			return undefined;
+	}
+}
+
+/** a symbol together with what it is bound to, so `frames` of `{ frames: framesOf }` also stands for `framesOf` */
+function boundTo(symbol: TsSymbol | undefined, checker: TsTypeChecker): TsSymbol[] {
+	if(symbol === undefined) {
+		return [];
+	}
+	const declaration = symbol.declarations?.[0];
+	const value = declaration?.initializer === undefined ? declaration && checker.getShorthandAssignmentValueSymbol(declaration) : checker.getSymbolAtLocation(declaration.initializer);
+	return value === undefined ? [symbol] : [symbol, resolveAlias(value, checker)];
+}
+
+/* per program, what its modules export under a name, for a replacement the file does not import yet */
+const exportedNames = new WeakMap<object, Map<string, TsSymbol | undefined>>();
+
+/** what `name` stands for at `node`: what is in scope there, else what a module of the program exports under it */
+function rootSymbol(name: string, node: Node, sourceCode: SourceCode, services: TypeServices): TsSymbol | undefined {
+	const checker = services.program.getTypeChecker();
+	let scope: Scope.Scope | null = sourceCode.getScope(node);
+	while(scope && !scope.set.has(name)) {
+		scope = scope.upper;
+	}
+	if(scope) {
+		return symbolOf(scope.set.get(name)?.defs[0]?.name, services, checker);
+	}
+	let known = exportedNames.get(services.program);
+	if(known === undefined) {
+		exportedNames.set(services.program, known = new Map());
+	}
+	if(!known.has(name)) {
+		const modules = services.program.getSourceFiles().map(file => checker.getSymbolAtLocation(file)).filter(m => m !== undefined);
+		known.set(name, modules.flatMap(m => checker.getExportsOfModule(m)).find(e => e.getName() === name));
+	}
+	return known.get(name);
+}
+
+/** the properties of what a symbol holds */
+function propertiesOf(symbol: TsSymbol | undefined, checker: TsTypeChecker): readonly TsSymbol[] {
+	const declaration = symbol?.declarations?.[0];
+	return symbol === undefined || declaration === undefined ? [] : checker.getTypeOfSymbolAtLocation(symbol, declaration).getProperties();
+}
+
+/** each link of a dotted name, `Dataflow.origin`, as the symbols it resolves to: the name and what it is bound to */
+function resolveChain(chain: string, node: Node, sourceCode: SourceCode, services: TypeServices): TsSymbol[][] {
+	const checker = services.program.getTypeChecker();
+	const [root, ...members] = chain.split('.');
+	const links = [boundTo(rootSymbol(root, node, sourceCode, services), checker)];
+	for(const member of members) {
+		links.push(boundTo(propertiesOf(links[links.length - 1][0], checker).find(p => p.getName() === member), checker));
+	}
+	return links;
+}
+
+/** Every symbol the dotted names of a replacement resolve to, `REnvironment.frames` to `REnvironment`, its `frames`, and the function that member is bound to. */
+function symbolsNamedBy(replacement: string, node: Node, sourceCode: SourceCode, services: TypeServices): Set<TsSymbol> {
+	return new Set((replacement.match(/[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*/g) ?? []).flatMap(chain => resolveChain(chain, node, sourceCode, services).flat()));
+}
+
+/**
+ * The member of `replacement` that takes the place of `member` of `original`: the one of the same name, else the one
+ * bound to the same function under another name. `undefined` if the replacement has none, `null` if it cannot be told.
+ */
+export function counterpartOf(original: Node, member: string, replacement: string, sourceCode: SourceCode, services: TypeServices): string | undefined | null {
+	const checker = services.program.getTypeChecker();
+	const target = resolveChain(replacement, original, sourceCode, services).at(-1)?.[0];
+	if(target === undefined) {
+		return null;
+	}
+	const offered = propertiesOf(target, checker);
+	const was = boundTo(propertiesOf(symbolOf(original, services, checker), checker).find(p => p.getName() === member), checker);
+	return (offered.find(p => p.getName() === member) ?? offered.find(p => boundTo(p, checker).some(s => was.includes(s))))?.getName();
+}
+
+/**
+ * Whether `node` sits in a function the replacement would call, where putting the replacement in would make that
+ * function call itself. A replacement can only call what it names: a function is excluded if it is declared or bound
+ * under one of those names, or, with types, if one of them resolves to it, wired up under another name or in another
+ * file. Both ask the code alone, never file paths, which differ between systems and how a file was opened.
+ */
+export function insideReplacement(node: Node, replacement: string, sourceCode: SourceCode, services?: TypeServices): boolean {
+	const names = new Set(replacement.match(/[A-Za-z_$][\w$]*/g) ?? []);
+	const ancestors = sourceCode.getAncestors(node);
+	const functions = ancestors.flatMap((fn, i) => fn.type === 'FunctionDeclaration' || fn.type === 'FunctionExpression' || fn.type === 'ArrowFunctionExpression' ? [nameOf(fn, ancestors[i - 1])] : [])
+		.filter((name): name is Node => name !== undefined);
+	if(functions.some(name => name.type === 'Identifier' && names.has(name.name))) {
+		return true;
+	}
+	if(services === undefined || functions.length === 0) {
+		return false;
+	}
+	const called = symbolsNamedBy(replacement, node, sourceCode, services);
+	const checker = services.program.getTypeChecker();
+	return functions.some(name => boundTo(symbolOf(name, services, checker), checker).some(symbol => called.has(symbol)));
+}
+
 /** The file a symbol is declared in. */
 export function declarationFile(symbol: TsSymbol | undefined): string | undefined {
 	return symbol?.declarations?.[0]?.getSourceFile()?.fileName;

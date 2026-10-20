@@ -191,6 +191,47 @@ typed.run('replacement-pattern (declaredIn)', replacementPattern, {
 		filename,
 		options: options([declaredIn]),
 		errors:  1
+	}, {
+		/* only the helper's own body is spared, the rest of the module that declares the shape is not */
+		name:    'the shape within its own declaring module',
+		code:    'export interface Edge { types: number }\ndeclare const e: Edge;\nconst a = e.types === 1;',
+		filename,
+		options: options([{ ...edgeIsOnlyType, declaredIn: { 'left.property': 'file' } }]),
+		errors:  1
+	}]
+});
+
+/* a helper wired up under another name (`step: looping`) is still the function the fix would call */
+const wiredStep: ReplacementPattern = { id: 'wired-step', selector: 'BinaryExpression[operator="+"][right.value=1]', capture: { x: 'left' }, replace: 'Wired.step({{x}})', fix: true };
+const wired = 'export function looping(x: number): number { return x + 1; }\nexport const Wired = { step: looping };\n';
+typed.run('replacement-pattern (no recursion)', replacementPattern, {
+	valid:   [{ name: 'the body of the function the replacement is wired to', code: wired, filename, options: options([wiredStep]) }],
+	invalid: [{
+		name:    'the same file outside of it',
+		code:    `${wired}export const y = 2 + 1;`,
+		filename,
+		options: options([wiredStep]),
+		output:  `${wired}export const y = Wired.step(2);`,
+		errors:  1
+	}]
+});
+
+/* the same, wired up in another module the file under test does not even import */
+const elsewhereStep: ReplacementPattern = { ...wiredStep, id: 'elsewhere-step', replace: 'WiredElsewhere.step({{x}})' };
+typed.run('replacement-pattern (no recursion across modules)', replacementPattern, {
+	valid: [{
+		name:    'the body of a function another module wires up',
+		code:    'export function looping(x: number): number { return x + 1; }',
+		filename,
+		options: options([elsewhereStep])
+	}],
+	invalid: [{
+		name:    'any other function of the file',
+		code:    'export function other(x: number): number { return x + 1; }',
+		filename,
+		options: options([elsewhereStep]),
+		output:  'export function other(x: number): number { return WiredElsewhere.step(x); }',
+		errors:  1
 	}]
 });
 
@@ -199,6 +240,11 @@ typed.run('use-instead', useInstead, {
 		{
 			name: 'the helper object may wire it up',
 			code: 'import { legacy } from "./graph-edge";\nexport const Wrapper = { modern: legacy };',
+			filename
+		},
+		{
+			name: 'the wrapper may call what it wraps, wherever its file is and however the path is spelled',
+			code: 'import { legacy } from "./graph-edge";\nexport const Helper = { modern(x: number) { return legacy(x); } };',
 			filename
 		},
 		{
@@ -213,6 +259,44 @@ typed.run('use-instead', useInstead, {
 		}
 	],
 	invalid: [
+		{
+			name:   'a member of a replaced object keeps its name',
+			code:   'import { OldHelper, Helper } from "./graph-edge";\nexport const a = OldHelper.modern(1) + Helper.modern(2);',
+			filename,
+			output: 'import { OldHelper, Helper } from "./graph-edge";\nexport const a = Helper.modern(1) + Helper.modern(2);',
+			errors: [{ message: 'Do not use `OldHelper` directly, use `Helper.modern` instead.' }]
+		},
+		{
+			name:   'a member of a replaced object moves to the one bound to the same function',
+			code:   'import { OldHelper } from "./graph-edge";\nexport const a = OldHelper.older(1);',
+			filename,
+			errors: [{
+				message:     'Do not use `OldHelper` directly, use `Helper.modern` instead.',
+				suggestions: [{ desc: 'Replace with `Helper.modern`.', output: 'import { OldHelper } from "./graph-edge";\nexport const a = Helper.modern(1);' }]
+			}]
+		},
+		{
+			name:   'a replacement that cannot be resolved replaces the object as written',
+			code:   'import { LostHelper } from "./graph-edge";\nexport const a = LostHelper.modern(1);',
+			filename,
+			errors: [{
+				message:     'Do not use `LostHelper` directly, use `Nowhere` instead.',
+				suggestions: [{ desc: 'Replace with `Nowhere`.', output: 'import { LostHelper } from "./graph-edge";\nexport const a = Nowhere.modern(1);' }]
+			}]
+		},
+		{
+			name:   'a member without a counterpart is not fixed into one that does not exist',
+			code:   'import { OldHelper, Helper } from "./graph-edge";\nexport const a = OldHelper.gone(1) + Helper.modern(2);',
+			filename,
+			errors: [{ message: 'Do not use `OldHelper` directly, use `Helper` instead, which has no counterpart of `gone` yet.' }]
+		},
+		{
+			name:   'the file of the wrapper still uses the wrapper outside of it',
+			code:   'import { legacy } from "./graph-edge";\nexport const Helper = { modern(x: number) { return legacy(x); } };\nexport const b = legacy(2);',
+			filename,
+			output: 'import { legacy } from "./graph-edge";\nexport const Helper = { modern(x: number) { return legacy(x); } };\nexport const b = Helper.modern(2);',
+			errors: [{ message: 'Do not use `legacy` directly, use `Helper.modern` instead.' }]
+		},
 		{
 			name:   'suggested when the helper is not in scope',
 			code:   'import { legacy } from "./graph-edge";\nexport const a = legacy(1);',
@@ -300,7 +384,12 @@ const notReported = [
 	'RFunctionCall.is(n) && k.named',
 	'RArgument.is(n) && k.name !== undefined',
 	'RFunctionCall.isNamed(c) && Identifier.getName(d.functionName.content) === "f"',
-	'other === undefined ? undefined : SourceLocation.getStartLine(loc)'
+	'other === undefined ? undefined : SourceLocation.getStartLine(loc)',
+	/* the method the replacement calls is where the fallback is written out, a fix there would make it call itself */
+	'class { public edgesTo(id: number) { return g.ingoingEdges(id) ?? NoEdges; } }',
+	'class { edgesFrom = (id: number) => g.outgoingEdges(id) ?? NoEdges; }',
+	'Object.assign({}, { edgesTo: function(id: number) { return g.ingoingEdges(id) ?? NoEdges; } })',
+	'((o: { edgesTo?: (id: number) => unknown }) => { o.edgesTo = (id: number) => g.ingoingEdges(id) ?? NoEdges; })'
 ];
 
 const code = [

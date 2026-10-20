@@ -23,3 +23,21 @@ export const Legacy = {
 		return x;
 	}
 };
+
+/**
+ * an old helper object, one member kept by name, one renamed, one without a counterpart yet
+ * @useInstead {@link Helper}
+ */
+export const OldHelper = {
+	modern: legacy,
+	older:  legacy,
+	gone(x: number): number {
+		return x;
+	}
+};
+
+/**
+ * an old helper object whose replacement the program does not know
+ * @useInstead {@link Nowhere}
+ */
+export const LostHelper = { modern: legacy };

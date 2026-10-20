@@ -1,7 +1,7 @@
 import type { Rule } from 'eslint';
 import type { Node } from 'estree';
 import type { ReplacementPattern } from '../pattern-type';
-import { declarationFile, isApplicable, suppressed, symbolOf, typeServices } from './util';
+import { declarationFile, insideReplacement, isApplicable, suppressed, symbolOf, typeServices } from './util';
 
 /** Resolves a dotted path (`left.object`) relative to the matched node. */
 function resolvePath(node: Node, path: string): Node | undefined {
@@ -31,35 +31,6 @@ function render(template: string, captures: Readonly<Record<string, string>>, no
 		return filter === 'last' ? text.slice(text.lastIndexOf('.') + 1) : text;
 	});
 	return failed ? undefined : filled;
-}
-
-/** the name a replacement calls, `escapeRegex` for `escapeRegex(s)` and `toBuiltIn` for `!NodeId.toBuiltIn(x)` */
-function calledBy(replacement: string): string | undefined {
-	return /^!?(?:[A-Za-z_$][\w$]*\.)*([A-Za-z_$][\w$]*)\(/.exec(replacement)?.[1];
-}
-
-/** the name a function is declared or bound under, as a declaration, an object member, or a variable */
-function nameOf(fn: Node, parent: Node | undefined): string | undefined {
-	if(fn.type === 'FunctionDeclaration' || fn.type === 'FunctionExpression') {
-		if(fn.id) {
-			return fn.id.name;
-		}
-	}
-	if(parent?.type === 'Property' || parent?.type === 'MethodDefinition') {
-		return parent.key.type === 'Identifier' ? parent.key.name : undefined;
-	}
-	return parent?.type === 'VariableDeclarator' && parent.id.type === 'Identifier' ? parent.id.name : undefined;
-}
-
-/** Whether `node` sits in the function the replacement would call, where the fix would make the helper call itself. */
-function withinReplacement(node: Node, replacement: string, sourceCode: Rule.RuleContext['sourceCode']): boolean {
-	const called = calledBy(replacement);
-	if(called === undefined) {
-		return false;
-	}
-	const ancestors = sourceCode.getAncestors(node);
-	return ancestors.some((fn, i) => (fn.type === 'FunctionDeclaration' || fn.type === 'FunctionExpression' || fn.type === 'ArrowFunctionExpression')
-		&& nameOf(fn, ancestors[i - 1]) === called);
 }
 
 /** per program, whether one of its files matches a `helperIn` path; every file of a run shares the program */
@@ -141,10 +112,7 @@ const rule: Rule.RuleModule = {
 			}
 		}
 
-		/**
-		 * The match only counts if every named node resolves to a declaration of the expected flowR file.
-		 * The declaring file itself is exempt, it is where the helper is built.
-		 */
+		/** The match only counts if every named node resolves to a declaration of the expected flowR file. */
 		function isFlowr(node: Node, pattern: ReplacementPattern): boolean {
 			if(pattern.helperIn !== undefined && (!services || !programHas(services.program, pattern.helperIn))) {
 				return false;
@@ -155,7 +123,7 @@ const rule: Rule.RuleModule = {
 			}
 			return Object.entries(pattern.declaredIn).every(([path, expected]) => {
 				const file = declarationFile(symbolOf(resolvePath(node, path), services, checker));
-				return file !== undefined && file !== context.filename && file.replaceAll('\\', '/').includes(expected);
+				return file !== undefined && file.replaceAll('\\', '/').includes(expected);
 			});
 		}
 
@@ -176,7 +144,7 @@ const rule: Rule.RuleModule = {
 			const replacement = render(pattern.replace, captures, node, sourceCode);
 			const message = (pattern.message === undefined ? undefined : render(pattern.message, captures, node, sourceCode))
 				?? (replacement ? `Use \`${replacement}\` here.` : `\`${pattern.id ?? pattern.selector}\` has a helper replacement.`);
-			if(replacement !== undefined && withinReplacement(node, replacement, sourceCode)) {
+			if(replacement !== undefined && insideReplacement(node, replacement, sourceCode, services)) {
 				return;
 			} else if(replacement === undefined) {
 				context.report({ node, messageId: 'replacement', data: { message } });

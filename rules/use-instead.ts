@@ -1,7 +1,7 @@
 import type { Rule, Scope } from 'eslint';
 import type { Identifier, MemberExpression, Node } from 'estree';
 import type { TsSymbol, TsTypeChecker } from './ts-types';
-import { declarationFile, isApplicable, suppressed, symbolOf, typeServices, useInsteadOf } from './util';
+import { counterpartOf, insideReplacement, isApplicable, suppressed, symbolOf, typeServices, useInsteadOf } from './util';
 
 /** documentation is read once per symbol and reused for every reference */
 const tagCache = new WeakMap<TsSymbol, string | null>();
@@ -40,10 +40,17 @@ function cachedMemberTags(symbol: TsSymbol, checker: TsTypeChecker): Map<string,
 	return tags;
 }
 
-/** `{@link Resolve.toValue}` becomes `Resolve.toValue`, owned by `Resolve`. */
-function parseTarget(tag: string): { display: string, owner: string } {
+/** `X.member` around a reference to `X`, with the member it reads */
+function memberRead(node: Rule.Node): { node: Rule.Node, member: string } | undefined {
+	const parent = node.parent as Rule.Node | null;
+	return parent?.type === 'MemberExpression' && parent.object === node && !parent.computed && parent.property.type === 'Identifier'
+		? { node: parent, member: parent.property.name } : undefined;
+}
+
+/** `{@link Resolve.toValue}` becomes `Resolve.toValue`. */
+function parseTarget(tag: string): { display: string } {
 	const display = tag.replace(/^\{\s*@link\s*/, '').replace(/\s*\|.*$/, '').replace(/\s*\}\s*$/, '').trim();
-	return { display, owner: display.split('.')[0] };
+	return { display };
 }
 
 /** The references that build the replacement in the first place: helper-object wiring and re-exports. */
@@ -81,6 +88,7 @@ const rule: Rule.RuleModule = {
 		messages: {
 			useInstead:      'Do not use `{{name}}` directly, use `{{replacement}}` instead.',
 			useInsteadPlain: 'Do not use `{{name}}` directly, see its documentation for the replacement.',
+			useInsteadMissing: 'Do not use `{{name}}` directly, use `{{replacement}}` instead, which has no counterpart of `{{member}}` yet.',
 			suggest:         'Replace with `{{replacement}}`.'
 		}
 	},
@@ -94,22 +102,29 @@ const rule: Rule.RuleModule = {
 		/* helper objects are PascalCase, so member checks stay cheap */
 		const helperObjectPattern = new RegExp((context.options[0] as { helperObjectPattern?: string } | undefined)?.helperObjectPattern ?? '^[A-Z]');
 		const candidates = new Map<string, TsSymbol>();
-		/** the helper objects declared here, a file may use what it wraps */
-		const owned = new Set<string>();
 
 		function report(node: Rule.Node, name: string, tag: string): void {
-			const { display, owner } = parseTarget(tag);
-			if(owned.has(owner) || suppressed(context, node, ['use-instead'])) {
+			const { display } = parseTarget(tag);
+			/* only the wrapper itself may use what it wraps, anywhere else the replacement holds */
+			if(insideReplacement(node, display, sourceCode, services) || suppressed(context, node, ['use-instead'])) {
 				return;
 			}
-			const fix = (fixer: Rule.RuleFixer) => fixer.replaceText(node, display);
+			/* `Old.member` moves to the member of the replacement that takes its place, which may be named differently */
+			const access = memberRead(node);
+			const counterpart = display === '' || access === undefined || !services ? null : counterpartOf(node, access.member, display, sourceCode, services);
+			if(counterpart === undefined) {
+				context.report({ node, messageId: 'useInsteadMissing', data: { name, replacement: display, member: access?.member ?? '' } });
+				return;
+			}
+			const [target, text] = counterpart === null || access === undefined ? [node, display] : [access.node, `${display}.${counterpart}`];
+			const fix = (fixer: Rule.RuleFixer) => fixer.replaceText(target, text);
 			/* fixed on the spot where the helper is already in scope, offered as a suggestion otherwise */
 			const applicable = display !== '' && isApplicable(context, node, display);
 			context.report({
 				node,
 				messageId: display ? 'useInstead' : 'useInsteadPlain',
-				data:      { name, replacement: display },
-				...display === '' ? {} : applicable ? { fix } : { suggest: [{ messageId: 'suggest', data: { replacement: display }, fix }] }
+				data:      { name, replacement: text },
+				...display === '' ? {} : applicable ? { fix } : { suggest: [{ messageId: 'suggest', data: { replacement: text }, fix }] }
 			});
 		}
 
@@ -120,15 +135,13 @@ const rule: Rule.RuleModule = {
 				const foreign: [Scope.Variable, Identifier, string][] = [];
 				for(const variable of module?.variables ?? []) {
 					const declaration = variable.defs[0]?.name;
-					if(declaration?.type !== 'Identifier') {
+					/* only what is imported is someone else's to replace, the file's own declarations may use themselves;
+					   asked of the code rather than of file paths, which differ between systems */
+					if(declaration?.type !== 'Identifier' || variable.defs[0]?.type !== 'ImportBinding') {
 						continue;
 					}
 					const symbol = symbolOf(declaration, services, checker);
 					if(!symbol) {
-						continue;
-					} else if(declarationFile(symbol) === context.filename) {
-						/* a declaration may always use itself */
-						owned.add(variable.name);
 						continue;
 					}
 					if(helperObjectPattern.test(variable.name)) {

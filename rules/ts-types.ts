@@ -5,7 +5,11 @@
 
 export interface TsSourceFile { fileName: string }
 
-export interface TsDeclaration { getSourceFile(): TsSourceFile | undefined }
+export interface TsDeclaration {
+	getSourceFile(): TsSourceFile | undefined;
+	/** what a property or variable is set to, `frames: framesOf` binds `framesOf` */
+	initializer?: unknown;
+}
 
 export interface TsJsDocTag { name: string, text?: readonly { text: string }[] }
 
@@ -22,10 +26,14 @@ export interface TsTypeChecker {
 	getSymbolAtLocation(node: unknown): TsSymbol | undefined;
 	getAliasedSymbol(symbol: TsSymbol): TsSymbol;
 	getTypeOfSymbolAtLocation(symbol: TsSymbol, location: TsDeclaration): TsType;
+	/** what a module exports, its symbol taken from the source file */
+	getExportsOfModule(module: TsSymbol): readonly TsSymbol[];
+	/** the variable a shorthand property `{ framesOf }` stands for */
+	getShorthandAssignmentValueSymbol(declaration: TsDeclaration): TsSymbol | undefined;
 }
 
 /** What typescript-eslint hands to a type-aware rule. */
 export interface TypeServices {
-	program:               { getTypeChecker(): TsTypeChecker, getSourceFiles(): readonly { fileName: string }[] };
+	program:               { getTypeChecker(): TsTypeChecker, getSourceFiles(): readonly TsSourceFile[] };
 	esTreeNodeToTSNodeMap: { get(node: unknown): unknown };
 }
