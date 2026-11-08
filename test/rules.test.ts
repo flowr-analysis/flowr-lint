@@ -9,6 +9,7 @@ import defaults from '../patterns.js';
 import useInstead from '../rules/use-instead.js';
 import replacementPattern from '../rules/replacement-pattern.js';
 import fileNaming from '../rules/file-naming.js';
+import noSemanticWidening from '../rules/no-semantic-widening.js';
 import { declarationFile, symbolOf, typeServices } from '../rules/util.js';
 
 /*
@@ -92,6 +93,36 @@ const vertexIs: ReplacementPattern = {
 	message:  'Use `DfgVertex.is{{type|last}}` here.'
 };
 const options = (patterns: readonly ReplacementPattern[]): [{ patterns: readonly ReplacementPattern[] }] => [{ patterns }];
+
+const brands = `
+type NodeId = (string | number) & { __brand?: 'node-id' };
+type Name = string & { __brand?: 'identifier' };
+declare const id: NodeId; declare const aName: Name; declare const ids: Set<Name>;
+declare function plainName(s: string): void; declare function takesName(s: Name): void;
+`;
+typed.run('no-semantic-widening', noSemanticWidening, {
+	valid: [
+		{ code: `${brands}takesName(aName);`, filename },
+		{ code: `${brands}plainName(aName as string);`, filename },
+		{ code: `${brands}plainName(String(id));`, filename },
+		{ code: `${brands}const s = \`\${String(id)}\`; plainName(s);`, filename },
+		{ code: `${brands}plainName('literal');`, filename },
+		{ code: `${brands}'abc'.startsWith(aName);`, filename },
+		{ code: `${brands}const x: Set<Name> = ids; const y = new Set<Name>([aName]); y.add(aName);`, filename },
+		{ code: `${brands}console.log(id);`, filename }
+	],
+	invalid: [
+		{ code: `${brands}plainName(aName);`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const s: string = aName;`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const s: string | number = id;`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}function f(): string { return aName; }`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const f: () => string = () => aName;`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const s = new Set<string>(); s.add(aName);`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const m = new Map<string, number>(); m.get(aName);`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const s: ReadonlySet<string> = ids;`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const o: { n: string } = { n: aName };`, filename, errors: [{ messageId: 'widens' }] }
+	]
+});
 
 plain.run('file-naming', fileNaming, {
 	valid: [

@@ -27,6 +27,7 @@ below `test/`.
 | :-- | :-- | :-- |
 | `flowr/use-instead` | the `@useInstead` tag | a reference to what a helper object replaced |
 | `flowr/replacement-pattern` | [`patterns.ts`](patterns.ts) | a shape of code with a helper equivalent |
+| `flowr/no-semantic-widening` | the types | a value of a `__brand`ed type (`NodeId`, `BrandedIdentifier`, ...) that silently becomes a plain `string` or `number`, also within `string[]`, `Set<string>`, or `Map<string, ...>` |
 
 Both fix in place when every name the replacement needs is already in scope, and offer an editor suggestion otherwise,
 since a fixer cannot add the missing import. A type-only binding of the right name does not count.

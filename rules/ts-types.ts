@@ -20,12 +20,29 @@ export interface TsSymbol {
 	getJsDocTags(checker: TsTypeChecker): readonly TsJsDocTag[];
 }
 
-export interface TsType { getProperties(): readonly TsSymbol[] }
+export interface TsType {
+	flags:  number;
+	types?: readonly TsType[];
+	getProperties(): readonly TsSymbol[];
+	getSymbol(): TsSymbol | undefined;
+	isUnion(): this is TsType & { types: readonly TsType[] };
+}
+
+/** What a call resolves to, its parameters only for a declaration in code. */
+export interface TsSignature {
+	declaration?: TsDeclaration & { parameters?: readonly unknown[] };
+}
 
 export interface TsTypeChecker {
 	getSymbolAtLocation(node: unknown): TsSymbol | undefined;
 	getAliasedSymbol(symbol: TsSymbol): TsSymbol;
 	getTypeOfSymbolAtLocation(symbol: TsSymbol, location: TsDeclaration): TsType;
+	getTypeAtLocation(node: unknown): TsType;
+	getContextualType(node: unknown): TsType | undefined;
+	getPropertyOfType(type: TsType, name: string): TsSymbol | undefined;
+	getTypeArguments(type: TsType): readonly TsType[];
+	getResolvedSignature(node: unknown): TsSignature | undefined;
+	typeToString(type: TsType): string;
 	/** what a module exports, its symbol taken from the source file */
 	getExportsOfModule(module: TsSymbol): readonly TsSymbol[];
 	/** the variable a shorthand property `{ framesOf }` stands for */
