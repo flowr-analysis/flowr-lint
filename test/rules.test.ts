@@ -97,6 +97,7 @@ const options = (patterns: readonly ReplacementPattern[]): [{ patterns: readonly
 const brands = `
 type NodeId = (string | number) & { __brand?: 'node-id' };
 type Name = string & { __brand?: 'identifier' };
+type Amb = \`#\${string}\` & { __brand?: 'state' };
 declare const id: NodeId; declare const aName: Name; declare const ids: Set<Name>;
 declare function plainName(s: string): void; declare function takesName(s: Name): void;
 `;
@@ -111,7 +112,17 @@ typed.run('no-semantic-widening', noSemanticWidening, {
 		{ code: `${brands}const x: Set<Name> = ids; const y = new Set<Name>([aName]); y.add(aName);`, filename },
 		{ code: `${brands}console.log(id);`, filename },
 		{ code: `${brands}['a', 'b'].includes(aName);`, filename },
-		{ code: `${brands}const named: Name[] = [aName]; named.push(aName);`, filename }
+		{ code: `${brands}const named: Name[] = [aName]; named.push(aName);`, filename },
+		{ code: `${brands}const named: Name[] = [...[aName]]; named.push(...named); takesName(...[aName] as [Name]);`, filename },
+		{ code: `${brands}const o: { n: Name } = { ...{ n: aName } };`, filename },
+		{ code: `${brands}const r: Record<Name, number> = { [aName]: 1 }; r[aName] = 2;`, filename },
+		{ code: `${brands}const xs = [1]; xs[id as number];`, filename },
+		{ code: `${brands}const s: string | boolean = String(id); plainName('#a');`, filename },
+		{ code: `${brands}const a: Amb = '#a'; const b: Amb = a;`, filename },
+		{ code: `${brands}const wide: Name | string = aName;`, filename },
+		{ code: `import assert from 'node:assert';\n${brands}assert.deepStrictEqual(id, 'x'); assert.deepStrictEqual(ids, new Set(['x']));`, filename },
+		{ code: `${brands}const t = \`a\${String(id)}\` as const; plainName(t);`, filename },
+		{ code: `${brands}Math.max(...[1]); [1].concat(...[[1]]);`, filename }
 	],
 	invalid: [
 		{ code: `${brands}plainName(aName);`, filename, errors: [{ messageId: 'widens' }] },
@@ -130,7 +141,20 @@ typed.run('no-semantic-widening', noSemanticWidening, {
 		{ code: `${brands}const t: [string, number] = [aName, 1];`, filename, errors: [{ messageId: 'widens' }] },
 		{ code: `${brands}function d(x: string = aName) { return x; }`, filename, errors: [{ messageId: 'widens' }] },
 		{ code: `${brands}class C { f: string = aName; }`, filename, errors: [{ messageId: 'widens' }] },
-		{ code: `${brands}function* g(): Generator<string> { yield aName; }`, filename, errors: [{ messageId: 'widens' }] }
+		{ code: `${brands}function* g(): Generator<string> { yield aName; }`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const ns = [aName]; const sx: string[] = [...ns];`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const sx: string[] = [...ids];`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const sx: string[] = []; sx.push(...ids);`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}function rest(...xs: string[]) { return xs; } rest(...ids);`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const n = { n: aName }; const o: { n: string } = { ...n };`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const r: Record<string, number> = { [aName]: 1 };`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const r: Record<string, number> = {}; r[aName] = 1;`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}declare const r: Record<string, number> | undefined; r?.[aName];`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const two = { a: aName, b: aName }; const o: { a: string, b: string } = { ...two };`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}declare function foo(s: string[]): void; foo([...ids]);`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const s: string | boolean = aName;`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}declare const n: Name | boolean; const s: string | boolean = n;`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}declare const a: Amb; plainName(a);`, filename, errors: [{ messageId: 'widens' }] }
 	]
 });
 

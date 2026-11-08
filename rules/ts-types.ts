@@ -32,17 +32,20 @@ export interface TsType {
 /** What a call resolves to, its parameters only for a declaration in code. */
 export interface TsSignature {
 	declaration?: TsDeclaration & { parameters?: readonly unknown[] };
+	getParameters?(): readonly TsSymbol[];
 }
 
 export interface TsTypeChecker {
 	getSymbolAtLocation(node: unknown): TsSymbol | undefined;
 	getAliasedSymbol(symbol: TsSymbol): TsSymbol;
-	getTypeOfSymbolAtLocation(symbol: TsSymbol, location: TsDeclaration): TsType;
+	getTypeOfSymbolAtLocation(symbol: TsSymbol, location: unknown): TsType;
+	getIndexInfoOfType(type: TsType, kind: number): { keyType: TsType } | undefined;
 	getTypeAtLocation(node: unknown): TsType;
 	getContextualType(node: unknown): TsType | undefined;
 	getPropertyOfType(type: TsType, name: string): TsSymbol | undefined;
 	getTypeArguments(type: TsType): readonly TsType[];
 	getResolvedSignature(node: unknown): TsSignature | undefined;
+	getReturnTypeOfSignature(signature: TsSignature): TsType;
 	typeToString(type: TsType): string;
 	/** what a module exports, its symbol taken from the source file */
 	getExportsOfModule(module: TsSymbol): readonly TsSymbol[];
