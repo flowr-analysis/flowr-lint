@@ -109,7 +109,9 @@ typed.run('no-semantic-widening', noSemanticWidening, {
 		{ code: `${brands}plainName('literal');`, filename },
 		{ code: `${brands}'abc'.startsWith(aName);`, filename },
 		{ code: `${brands}const x: Set<Name> = ids; const y = new Set<Name>([aName]); y.add(aName);`, filename },
-		{ code: `${brands}console.log(id);`, filename }
+		{ code: `${brands}console.log(id);`, filename },
+		{ code: `${brands}['a', 'b'].includes(aName);`, filename },
+		{ code: `${brands}const named: Name[] = [aName]; named.push(aName);`, filename }
 	],
 	invalid: [
 		{ code: `${brands}plainName(aName);`, filename, errors: [{ messageId: 'widens' }] },
@@ -120,7 +122,15 @@ typed.run('no-semantic-widening', noSemanticWidening, {
 		{ code: `${brands}const s = new Set<string>(); s.add(aName);`, filename, errors: [{ messageId: 'widens' }] },
 		{ code: `${brands}const m = new Map<string, number>(); m.get(aName);`, filename, errors: [{ messageId: 'widens' }] },
 		{ code: `${brands}const s: ReadonlySet<string> = ids;`, filename, errors: [{ messageId: 'widens' }] },
-		{ code: `${brands}const o: { n: string } = { n: aName };`, filename, errors: [{ messageId: 'widens' }] }
+		{ code: `${brands}const o: { n: string } = { n: aName };`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const local = ['a']; local.includes(aName);`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const sx: string[] = []; sx.push(aName);`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const sx: string[] = []; sx.concat([aName]);`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}new Set<string>(ids);`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}const t: [string, number] = [aName, 1];`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}function d(x: string = aName) { return x; }`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}class C { f: string = aName; }`, filename, errors: [{ messageId: 'widens' }] },
+		{ code: `${brands}function* g(): Generator<string> { yield aName; }`, filename, errors: [{ messageId: 'widens' }] }
 	]
 });
 

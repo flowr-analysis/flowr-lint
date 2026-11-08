@@ -21,8 +21,9 @@ export interface TsSymbol {
 }
 
 export interface TsType {
-	flags:  number;
-	types?: readonly TsType[];
+	flags:        number;
+	objectFlags?: number;
+	types?:       readonly TsType[];
 	getProperties(): readonly TsSymbol[];
 	getSymbol(): TsSymbol | undefined;
 	isUnion(): this is TsType & { types: readonly TsType[] };
